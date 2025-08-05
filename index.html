@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Car Garage Management System</title>
+    <title>JANU MOTORS - Premium Garage Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -12,19 +12,57 @@
           extend: {
             colors: {
               primary: {
-                DEFAULT: '#3B82F6',
-                '50': '#EFF6FF',
-                '100': '#DBEAFE',
-                '200': '#BFDBFE',
-                '300': '#93C5FD',
-                '400': '#60A5FA',
-                '500': '#3B82F6',
-                '600': '#2563EB',
-                '700': '#1D4ED8',
-                '800': '#1E40AF',
-                '900': '#1E3A8A',
-                '950': '#172554',
+                DEFAULT: '#FFD700',
+                '50': '#FFFEF7',
+                '100': '#FFFBEB',
+                '200': '#FFF3C4',
+                '300': '#FFEC8C',
+                '400': '#FFE066',
+                '500': '#FFD700',
+                '600': '#E6C200',
+                '700': '#B8940D',
+                '800': '#8A6914',
+                '900': '#5C4619',
+                '950': '#3D2F11',
               },
+              dark: {
+                DEFAULT: '#000000',
+                '50': '#1a1a1a',
+                '100': '#2d2d2d',
+                '200': '#404040',
+                '300': '#525252',
+                '400': '#737373',
+                '500': '#a3a3a3',
+                '600': '#d4d4d4',
+                '700': '#e5e5e5',
+                '800': '#f5f5f5',
+                '900': '#fafafa',
+              },
+              accent: {
+                DEFAULT: '#FF6B35',
+                light: '#FF8F65',
+                dark: '#CC4A1A',
+              }
+            },
+            fontFamily: {
+              'display': ['Inter', 'system-ui', 'sans-serif'],
+              'body': ['Inter', 'system-ui', 'sans-serif'],
+            },
+            backgroundImage: {
+              'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+              'gradient-luxury': 'linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #2d2d2d 100%)',
+              'gradient-gold': 'linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #FF6B35 100%)',
+            },
+            boxShadow: {
+              'luxury': '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
+              'gold': '0 10px 25px -5px rgba(255, 215, 0, 0.3)',
+              'inner-luxury': 'inset 0 2px 4px 0 rgba(255, 215, 0, 0.1)',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-in-out',
+              'slide-up': 'slideUp 0.3s ease-out',
+              'pulse-gold': 'pulseGold 2s infinite',
+              'float': 'float 3s ease-in-out infinite',
             }
           }
         }
@@ -47,7 +85,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-50 dark:bg-gray-900">
+  <body class="bg-gradient-luxury text-white overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

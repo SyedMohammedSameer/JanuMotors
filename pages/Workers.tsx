@@ -2,7 +2,45 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import Modal from '../components/Modal';
 import { Worker, AttendanceRecord } from '../types';
-import { PencilSquareIcon } from '../components/Icons';
+import { PencilSquareIcon, UserGroupIcon, PlusIcon } from '../components/Icons';
+
+// Clock Icons
+const ClockIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
+
+const PlayIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" {...props}>
+        <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+    </svg>
+);
+
+const StopIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" {...props}>
+        <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+    </svg>
+);
+
+// Badge Icons for roles
+const WrenchIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.664 1.208-.766M11.42 15.17l-4.66-4.66C4.562 8.306 4.562 5.09 6.89 2.763c2.328-2.328 5.544-2.328 7.872 0l4.66 4.66M11.42 15.17L5.75 21a2.652 2.652 0 01-3.75-3.75l5.877-5.877m0 0l2.496-3.03c.317-.384.74-.664 1.208-.766" />
+    </svg>
+);
+
+const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+    </svg>
+);
+
+const BriefcaseIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
+    </svg>
+);
 
 const DailyPayInput = ({ record, initialPay }: { record: AttendanceRecord, initialPay?: number }) => {
     const { dispatch } = useAppContext();
@@ -14,7 +52,7 @@ const DailyPayInput = ({ record, initialPay }: { record: AttendanceRecord, initi
 
     const handleBlur = () => {
         const amount = parseFloat(pay.toString());
-        const finalPay = !isNaN(amount) && amount >= 0 ? amount : undefined; // Use undefined for null in DB
+        const finalPay = !isNaN(amount) && amount >= 0 ? amount : undefined;
         
         const updatedRecord: AttendanceRecord = {
             ...record,
@@ -30,8 +68,8 @@ const DailyPayInput = ({ record, initialPay }: { record: AttendanceRecord, initi
             value={pay}
             onChange={e => setPay(e.target.value)}
             onBlur={handleBlur}
-            placeholder="N/A"
-            className="w-24 p-1 border rounded bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-primary-500 focus:border-primary-500"
+            placeholder="0.00"
+            className="w-24 px-3 py-1 form-input text-sm rounded-lg text-center"
         />
     );
 };
@@ -42,11 +80,9 @@ const Workers = () => {
     const [clockModalType, setClockModalType] = useState<'clock-in' | 'clock-out' | null>(null);
     const [selectedWorkerId, setSelectedWorkerId] = useState('');
     
-    // State for worker management modal
     const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
     const [currentWorker, setCurrentWorker] = useState<Partial<Worker> | null>(null);
     const workerRoles: Worker['role'][] = ['Mechanic', 'Receptionist', 'Manager'];
-
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -66,6 +102,24 @@ const Workers = () => {
             workersToClockOut: state.workers.filter(w => currentlyClockedInIds.has(w.id)),
         };
     }, [state.workers, state.attendance, today]);
+
+    const getRoleIcon = (role: Worker['role']) => {
+        switch (role) {
+            case 'Mechanic': return WrenchIcon;
+            case 'Receptionist': return PhoneIcon;
+            case 'Manager': return BriefcaseIcon;
+            default: return UserGroupIcon;
+        }
+    };
+
+    const getRoleColor = (role: Worker['role']) => {
+        switch (role) {
+            case 'Mechanic': return 'text-primary-500 bg-primary-500/10 border-primary-500/30';
+            case 'Receptionist': return 'text-blue-400 bg-blue-400/10 border-blue-400/30';
+            case 'Manager': return 'text-purple-400 bg-purple-400/10 border-purple-400/30';
+            default: return 'text-white/60 bg-white/10 border-white/30';
+        }
+    };
 
     const openClockModal = (type: 'clock-in' | 'clock-out') => {
         setClockModalType(type);
@@ -98,22 +152,11 @@ const Workers = () => {
                     clock_out: now.toISOString(),
                 };
                 await dispatch({ type: 'UPDATE_ATTENDANCE', payload: updatedRecord });
-            } else {
-                alert("This worker is not clocked in or has already clocked out.");
             }
         }
         setIsClockModalOpen(false);
     };
 
-    const getClockModalTitle = () => {
-        if (clockModalType === 'clock-in') return 'Clock In Worker';
-        if (clockModalType === 'clock-out') return 'Clock Out Worker';
-        return '';
-    };
-
-    const workersForClockModal = clockModalType === 'clock-in' ? workersToClockIn : workersToClockOut;
-
-    // Worker Management Handlers
     const handleOpenWorkerModal = (worker: Worker | null) => {
         setCurrentWorker(worker ? { ...worker } : { name: '', role: 'Mechanic' });
         setIsWorkerModalOpen(true);
@@ -149,141 +192,312 @@ const Workers = () => {
     };
 
     return (
-        <div className="space-y-8">
-             {/* Worker Management Section */}
-            <div>
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Worker Management</h2>
-                    <button
-                        onClick={() => handleOpenWorkerModal(null)}
-                        className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
+        <div className="space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div>
+                    <h1 className="text-3xl font-bold text-gradient flex items-center">
+                        <UserGroupIcon className="h-8 w-8 mr-3 text-primary-500" />
+                        Worker Management
+                    </h1>
+                    <p className="text-white/60 mt-2">Manage your team and track attendance</p>
+                </div>
+                
+                <button
+                    onClick={() => handleOpenWorkerModal(null)}
+                    className="btn-luxury px-6 py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap"
+                >
+                    <PlusIcon className="h-5 w-5" />
+                    <span>Add New Worker</span>
+                </button>
+            </div>
+
+            {/* Workers Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {state.workers.map(worker => {
+                    const RoleIcon = getRoleIcon(worker.role);
+                    const roleColor = getRoleColor(worker.role);
+                    const todayAttendance = todaysAttendance.find(a => a.worker_id === worker.id);
+                    const isActive = todayAttendance && !todayAttendance.clock_out;
+
+                    return (
+                        <div key={worker.id} className="card-luxury p-6 group">
+                            {/* Worker Header */}
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-12 h-12 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-lg">
+                                        {worker.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-white text-lg">{worker.name}</h3>
+                                        <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${roleColor}`}>
+                                            <RoleIcon className="w-3 h-3" />
+                                            <span>{worker.role}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-2">
+                                    {isActive && (
+                                        <div className="flex items-center space-x-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded-full">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                            <span className="text-xs font-medium text-green-400">Active</span>
+                                        </div>
+                                    )}
+                                    
+                                    <button
+                                        onClick={() => handleOpenWorkerModal(worker)}
+                                        className="p-2 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-all duration-300"
+                                    >
+                                        <PencilSquareIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Today's Activity */}
+                            <div className="space-y-3">
+                                {todayAttendance ? (
+                                    <>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-white/70">Clock In</span>
+                                            <span className="text-green-400 font-medium">
+                                                {new Date(todayAttendance.clock_in).toLocaleTimeString()}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-white/70">Clock Out</span>
+                                            {todayAttendance.clock_out ? (
+                                                <span className="text-red-400 font-medium">
+                                                    {new Date(todayAttendance.clock_out).toLocaleTimeString()}
+                                                </span>
+                                            ) : (
+                                                <span className="text-primary-500 font-medium animate-pulse">Active</span>
+                                            )}
+                                        </div>
+
+                                        {todayAttendance.clock_out && (
+                                            <>
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-white/70">Hours Worked</span>
+                                                    <span className="text-white font-medium">
+                                                        {((new Date(todayAttendance.clock_out).getTime() - new Date(todayAttendance.clock_in).getTime()) / 3600000).toFixed(1)}h
+                                                    </span>
+                                                </div>
+                                                
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-white/70">Daily Pay</span>
+                                                    <DailyPayInput record={todayAttendance} initialPay={todayAttendance.daily_pay} />
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="text-center py-4">
+                                        <ClockIcon className="w-8 h-8 text-primary-500/50 mx-auto mb-2" />
+                                        <p className="text-white/50 text-sm">Not clocked in today</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Clock In/Out Controls */}
+            <div className="card-luxury p-6">
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                    <ClockIcon className="h-6 w-6 mr-3 text-primary-500" />
+                    Attendance Control
+                </h3>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <button 
+                        onClick={() => openClockModal('clock-in')} 
+                        disabled={workersToClockIn.length === 0}
+                        className="flex-1 flex items-center justify-center space-x-2 px-6 py-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 hover:bg-green-500/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
-                        Add New Worker
+                        <PlayIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">Clock In ({workersToClockIn.length})</span>
+                    </button>
+                    
+                    <button 
+                        onClick={() => openClockModal('clock-out')} 
+                        disabled={workersToClockOut.length === 0}
+                        className="flex-1 flex items-center justify-center space-x-2 px-6 py-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 hover:bg-red-500/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                        <StopIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">Clock Out ({workersToClockOut.length})</span>
                     </button>
                 </div>
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                            <tr>
-                                <th scope="col" className="px-6 py-3">Name</th>
-                                <th scope="col" className="px-6 py-3">Role</th>
-                                <th scope="col" className="px-6 py-3">Actions</th>
+            </div>
+
+            {/* Today's Attendance Table */}
+            <div className="card-luxury overflow-hidden">
+                <div className="p-6 border-b border-primary-500/10">
+                    <h3 className="text-xl font-bold text-white">Today's Attendance Summary</h3>
+                    <p className="text-white/60">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+                
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-dark-50/50">
+                            <tr className="text-left text-sm font-semibold text-primary-500 uppercase tracking-wider">
+                                <th className="px-6 py-4">Worker</th>
+                                <th className="px-6 py-4">Clock In</th>
+                                <th className="px-6 py-4">Clock Out</th>
+                                <th className="px-6 py-4">Hours</th>
+                                <th className="px-6 py-4">Daily Pay</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {state.workers.map(worker => (
-                                <tr key={worker.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                    <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{worker.name}</td>
-                                    <td className="px-6 py-4">{worker.role}</td>
-                                    <td className="px-6 py-4">
-                                        <button onClick={() => handleOpenWorkerModal(worker)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">
-                                            <PencilSquareIcon className="w-5 h-5" />
-                                        </button>
+                        <tbody className="divide-y divide-primary-500/10">
+                            {todaysAttendance.length > 0 ? todaysAttendance.map(record => {
+                                const worker = state.workers.find(w => w.id === record.worker_id);
+                                if (!worker) return null;
+                                
+                                const clockInTime = new Date(record.clock_in);
+                                const clockOutTime = record.clock_out ? new Date(record.clock_out) : null;
+                                const hours = clockOutTime ? ((clockOutTime.getTime() - clockInTime.getTime()) / 3600000) : 0;
+
+                                return (
+                                    <tr key={record.id} className="hover:bg-primary-500/5 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-8 h-8 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-sm">
+                                                    {worker.name.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium text-white">{worker.name}</div>
+                                                    <div className="text-xs text-primary-500/80">{worker.role}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-white">{clockInTime.toLocaleTimeString()}</td>
+                                        <td className="px-6 py-4">
+                                            {clockOutTime ? (
+                                                <span className="text-white">{clockOutTime.toLocaleTimeString()}</span>
+                                            ) : (
+                                                <span className="flex items-center space-x-2 text-green-400 font-semibold">
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                    <span>Active</span>
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-white">
+                                            {hours > 0 ? `${hours.toFixed(1)}h` : '-'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {clockOutTime ? (
+                                                <DailyPayInput record={record} initialPay={record.daily_pay} />
+                                            ) : (
+                                                <span className="text-white/40 italic">Pending</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            }) : (
+                                <tr>
+                                    <td colSpan={5} className="text-center py-12">
+                                        <ClockIcon className="w-12 h-12 text-primary-500/50 mx-auto mb-4" />
+                                        <p className="text-white/60">No attendance records for today</p>
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {/* Attendance Section */}
-            <div>
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Worker Attendance</h2>
-                    <div className="space-x-2">
-                        <button onClick={() => openClockModal('clock-in')} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition disabled:bg-gray-400" disabled={workersToClockIn.length === 0}>Clock In</button>
-                        <button onClick={() => openClockModal('clock-out')} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition disabled:bg-gray-400" disabled={workersToClockOut.length === 0}>Clock Out</button>
-                    </div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
-                    <h3 className="text-lg font-semibold p-4 text-gray-800 dark:text-white border-b dark:border-gray-700">Today's Attendance ({new Date().toLocaleDateString()})</h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                <tr>
-                                    <th scope="col" className="px-6 py-3">Worker</th>
-                                    <th scope="col" className="px-6 py-3">Clock In</th>
-                                    <th scope="col" className="px-6 py-3">Clock Out</th>
-                                    <th scope="col" className="px-6 py-3">Hours</th>
-                                    <th scope="col" className="px-6 py-3">Daily Pay ($)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {todaysAttendance.length > 0 ? todaysAttendance.map(record => {
-                                    const worker = state.workers.find(w => w.id === record.worker_id);
-                                    if (!worker) return null;
-                                    
-                                    const clockInTime = new Date(record.clock_in);
-                                    const clockOutTime = record.clock_out ? new Date(record.clock_out) : null;
-                                    const hours = clockOutTime ? ((clockOutTime.getTime() - clockInTime.getTime()) / 3600000) : 0;
-
-                                    return (
-                                        <tr key={record.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                            <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{worker.name}</td>
-                                            <td className="px-6 py-4">{clockInTime.toLocaleTimeString()}</td>
-                                            <td className="px-6 py-4">{clockOutTime ? clockOutTime.toLocaleTimeString() : <span className="text-green-500 font-semibold">Active</span>}</td>
-                                            <td className="px-6 py-4">{hours > 0 ? hours.toFixed(2) : '-'}</td>
-                                            <td className="px-6 py-4">
-                                                {clockOutTime ? (
-                                                    <DailyPayInput record={record} initialPay={record.daily_pay} />
-                                                ) : (
-                                                    <span className="text-gray-400 italic">Pending</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                }) : (
-                                    <tr>
-                                        <td colSpan={5} className="text-center py-6 text-gray-500 dark:text-gray-400">No attendance records for today.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <Modal title={getClockModalTitle()} isOpen={isClockModalOpen} onClose={() => setIsClockModalOpen(false)}>
-                <form onSubmit={handleClockSubmit} className="space-y-4">
-                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Worker</label>
+            {/* Clock Modal */}
+            <Modal 
+                title={clockModalType === 'clock-in' ? 'Clock In Worker' : 'Clock Out Worker'} 
+                isOpen={isClockModalOpen} 
+                onClose={() => setIsClockModalOpen(false)}
+            >
+                <form onSubmit={handleClockSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-white/80 mb-2">Select Worker</label>
                         <select
                             value={selectedWorkerId}
                             onChange={(e) => setSelectedWorkerId(e.target.value)}
-                            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                            className="form-input w-full px-4 py-3"
                             required
                         >
                             <option value="">-- Select a Worker --</option>
-                            {workersForClockModal.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            {(clockModalType === 'clock-in' ? workersToClockIn : workersToClockOut).map(w => (
+                                <option key={w.id} value={w.id}>{w.name} ({w.role})</option>
+                            ))}
                         </select>
-                         {workersForClockModal.length === 0 && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">No workers available for this action.</p>
-                        )}
                     </div>
-                    <div className="flex justify-end space-x-2 pt-4">
-                        <button type="button" onClick={() => setIsClockModalOpen(false)} className="px-4 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300">Cancel</button>
-                        <button type="submit" disabled={!selectedWorkerId} className="px-4 py-2 rounded bg-primary-600 text-white hover:bg-primary-700 disabled:bg-gray-400">Confirm</button>
+                    
+                    <div className="flex justify-end space-x-4 pt-6">
+                        <button 
+                            type="button" 
+                            onClick={() => setIsClockModalOpen(false)} 
+                            className="btn-secondary px-6 py-3 rounded-xl"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            disabled={!selectedWorkerId} 
+                            className="btn-luxury px-6 py-3 rounded-xl"
+                        >
+                            Confirm {clockModalType === 'clock-in' ? 'Clock In' : 'Clock Out'}
+                        </button>
                     </div>
                 </form>
             </Modal>
             
-            <Modal title={currentWorker?.id ? 'Edit Worker' : 'Add New Worker'} isOpen={isWorkerModalOpen} onClose={handleCloseWorkerModal}>
-                <form onSubmit={handleWorkerSubmit} className="space-y-4">
+            {/* Worker Modal */}
+            <Modal 
+                title={currentWorker?.id ? 'Edit Worker' : 'Add New Worker'} 
+                isOpen={isWorkerModalOpen} 
+                onClose={handleCloseWorkerModal}
+            >
+                <form onSubmit={handleWorkerSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Worker Name</label>
-                        <input type="text" name="name" value={currentWorker?.name || ''} onChange={handleWorkerChange} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" required />
+                        <label className="block text-sm font-medium text-white/80 mb-2">Worker Name *</label>
+                        <input 
+                            type="text" 
+                            name="name" 
+                            value={currentWorker?.name || ''} 
+                            onChange={handleWorkerChange} 
+                            placeholder="Enter worker's full name"
+                            className="form-input w-full px-4 py-3" 
+                            required 
+                        />
                     </div>
+                    
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
-                        <select name="role" value={currentWorker?.role || ''} onChange={handleWorkerChange} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" required>
-                            {workerRoles.map(role => <option key={role} value={role}>{role}</option>)}
+                        <label className="block text-sm font-medium text-white/80 mb-2">Role *</label>
+                        <select 
+                            name="role" 
+                            value={currentWorker?.role || ''} 
+                            onChange={handleWorkerChange} 
+                            className="form-input w-full px-4 py-3" 
+                            required
+                        >
+                            {workerRoles.map(role => (
+                                <option key={role} value={role}>{role}</option>
+                            ))}
                         </select>
                     </div>
-                    <div className="flex justify-end space-x-2 pt-4">
-                        <button type="button" onClick={handleCloseWorkerModal} className="px-4 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300">Cancel</button>
-                        <button type="submit" className="px-4 py-2 rounded bg-primary-600 text-white hover:bg-primary-700">Save Worker</button>
+                    
+                    <div className="flex justify-end space-x-4 pt-6">
+                        <button 
+                            type="button" 
+                            onClick={handleCloseWorkerModal} 
+                            className="btn-secondary px-6 py-3 rounded-xl"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="btn-luxury px-6 py-3 rounded-xl"
+                        >
+                            {currentWorker?.id ? 'Update Worker' : 'Add Worker'}
+                        </button>
                     </div>
                 </form>
             </Modal>
