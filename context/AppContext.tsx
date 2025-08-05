@@ -53,6 +53,7 @@ type Action =
     | { type: 'DELETE_INVENTORY_ITEM'; payload: { id: string } }
     | { type: 'ADD_WORKER'; payload: Worker }
     | { type: 'UPDATE_WORKER'; payload: Worker }
+    | { type: 'DELETE_WORKER'; payload: { id: string } }
     | { type: 'ADD_ATTENDANCE'; payload: AttendanceRecord }
     | { type: 'UPDATE_ATTENDANCE'; payload: AttendanceRecord }
     | { type: 'ADD_PAYROLL_RECORD'; payload: PayrollRecord }
@@ -126,6 +127,12 @@ const appReducer = (state: AppState, action: Action): AppState => {
             return { 
                 ...state, 
                 workers: state.workers.map(w => w.id === action.payload.id ? action.payload : w),
+                error: null 
+            };
+        case 'DELETE_WORKER':
+            return { 
+                ...state, 
+                workers: state.workers.filter(w => w.id !== action.payload.id),
                 error: null 
             };
         case 'ADD_ATTENDANCE':
@@ -237,10 +244,15 @@ const AppContext = createContext<{
     state: AppState; 
     dispatch: (action: Action) => Promise<void>;
     clearError: () => void;
+    formatCurrency: (amount: number) => string;
 } | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [state, baseDispatch] = useReducer(appReducer, initialState);
+
+    const formatCurrency = (amount: number): string => {
+        return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
 
     useEffect(() => {
         if (!state.isConfigured) {
@@ -427,6 +439,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     baseDispatch(action);
                     break;
                 }
+                case 'DELETE_WORKER': {
+                    const result = await retryOperation(async () =>
+                        supabase.from('workers').delete().eq('id', action.payload.id)
+                    );
+                    if (result.error) throw result.error;
+                    baseDispatch(action);
+                    break;
+                }
                 case 'ADD_ATTENDANCE': {
                     const result = await retryOperation(async () =>
                         supabase.from('attendance').insert(action.payload).select()
@@ -505,7 +525,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <AppContext.Provider value={{ state, dispatch, clearError }}>
+        <AppContext.Provider value={{ state, dispatch, clearError, formatCurrency }}>
             {children}
         </AppContext.Provider>
     );

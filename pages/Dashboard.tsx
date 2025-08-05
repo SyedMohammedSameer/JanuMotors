@@ -13,7 +13,7 @@ const TrendUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const Dashboard = () => {
-    const { state } = useAppContext();
+    const { state, formatCurrency } = useAppContext();
     
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
@@ -49,7 +49,7 @@ const Dashboard = () => {
             monthlyRevenue.push({
                 month: date.toLocaleDateString('en-US', { month: 'short' }),
                 revenue: revenue,
-                target: 50000 // Example target
+                target: 150000 // Example target in INR
             });
         }
 
@@ -90,7 +90,7 @@ const Dashboard = () => {
             id: i.id,
             type: 'invoice',
             date: new Date(i.issue_date),
-            text: `Invoice #${i.id} paid for $${i.total.toFixed(2)}`,
+            text: `Invoice #${i.id} paid for ${formatCurrency(i.total)}`,
             icon: <CurrencyDollarIcon className="h-5 w-5" />,
             color: 'text-green-400'
         }));
@@ -109,7 +109,7 @@ const Dashboard = () => {
             financialSummaryData,
             recentActivity
         };
-    }, [state.customers, state.jobCards, state.invoices, state.inventory, state.payrollRecords, currentMonth, currentYear]);
+    }, [state.customers, state.jobCards, state.invoices, state.inventory, state.payrollRecords, currentMonth, currentYear, formatCurrency]);
 
     const JOB_STATUS_COLORS = {
         [JobStatus.PENDING]: '#FFD700',
@@ -126,7 +126,7 @@ const Dashboard = () => {
                     <p className="text-white font-semibold">{label}</p>
                     {payload.map((entry: any, index: number) => (
                         <p key={index} className="text-sm" style={{ color: entry.color }}>
-                            {entry.name}: ${entry.value?.toLocaleString()}
+                            {entry.name}: {formatCurrency(entry.value)}
                         </p>
                     ))}
                 </div>
@@ -166,7 +166,7 @@ const Dashboard = () => {
                 />
                 <Card 
                     title="Monthly Revenue" 
-                    value={`$${dashboardData.revenueThisMonth.toLocaleString()}`} 
+                    value={formatCurrency(dashboardData.revenueThisMonth)} 
                     icon={<CurrencyDollarIcon className="h-8 w-8" />}
                     change="+25%"
                     changeType="positive"
@@ -210,7 +210,7 @@ const Dashboard = () => {
                                 tick={{ fill: '#ffffff', fontSize: 12 }}
                                 axisLine={false}
                                 tickLine={false}
-                                tickFormatter={(value) => `$${(value/1000).toFixed(0)}K`}
+                                tickFormatter={(value) => `₹${(value/1000).toFixed(0)}K`}
                             />
                             <Tooltip content={<CustomTooltip />} />
                             <Area 
@@ -275,7 +275,7 @@ const Dashboard = () => {
                                 tick={{ fill: '#ffffff', fontSize: 12 }}
                                 axisLine={false}
                                 tickLine={false}
-                                tickFormatter={(value) => `$${(value/1000).toFixed(0)}K`}
+                                tickFormatter={(value) => `₹${(value/1000).toFixed(0)}K`}
                             />
                             <Tooltip content={<CustomTooltip />} />
                             <Bar dataKey="income" fill="#34D399" name="Income" radius={[4, 4, 0, 0]} />

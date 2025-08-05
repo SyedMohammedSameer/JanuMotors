@@ -366,11 +366,11 @@ const CarWashScheduling = () => {
                 <h4 className="text-lg font-bold text-white mb-4">Service Types</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {[
-                        { type: 'Basic Wash', color: 'from-blue-500 to-blue-600', price: '$15', duration: '30min' },
-                        { type: 'Premium Wash', color: 'from-purple-500 to-purple-600', price: '$25', duration: '45min' },
-                        { type: 'Full Detail', color: 'from-green-500 to-green-600', price: '$50', duration: '2hrs' },
-                        { type: 'Interior Only', color: 'from-orange-500 to-orange-600', price: '$20', duration: '1hr' },
-                        { type: 'Exterior Only', color: 'from-red-500 to-red-600', price: '$12', duration: '30min' }
+                        { type: 'Basic Wash', color: 'from-blue-500 to-blue-600', price: '₹500', duration: '30min' },
+                        { type: 'Premium Wash', color: 'from-purple-500 to-purple-600', price: '₹800', duration: '45min' },
+                        { type: 'Full Detail', color: 'from-green-500 to-green-600', price: '₹1500', duration: '2hrs' },
+                        { type: 'Interior Only', color: 'from-orange-500 to-orange-600', price: '₹600', duration: '1hr' },
+                        { type: 'Exterior Only', color: 'from-red-500 to-red-600', price: '₹400', duration: '30min' }
                     ].map((service) => (
                         <div key={service.type} className="flex items-center space-x-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
                             <div className={`w-4 h-4 bg-gradient-to-br ${service.color} rounded-full`}></div>
@@ -428,11 +428,11 @@ const CarWashScheduling = () => {
                                 className="form-input w-full px-4 py-3"
                                 required
                             >
-                                <option value="Basic Wash">Basic Wash ($15)</option>
-                                <option value="Premium Wash">Premium Wash ($25)</option>
-                                <option value="Full Detail">Full Detail ($50)</option>
-                                <option value="Interior Only">Interior Only ($20)</option>
-                                <option value="Exterior Only">Exterior Only ($12)</option>
+                                <option value="Basic Wash">Basic Wash (₹500)</option>
+                                <option value="Premium Wash">Premium Wash (₹800)</option>
+                                <option value="Full Detail">Full Detail (₹1500)</option>
+                                <option value="Interior Only">Interior Only (₹600)</option>
+                                <option value="Exterior Only">Exterior Only (₹400)</option>
                             </select>
                         </div>
 

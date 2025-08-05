@@ -62,7 +62,7 @@ const Login: React.FC = () => {
                         <div className="relative mx-auto w-20 h-20 mb-6">
                             <div className="absolute inset-0 bg-gradient-gold rounded-full animate-pulse-gold"></div>
                             <div className="relative z-10 w-full h-full bg-gradient-luxury rounded-full flex items-center justify-center border-2 border-primary-500/30">
-                                <WrenchScrewdriverIcon className="h-10 w-10 text-primary-500 icon-glow" />
+                                <img src="/assets/logo.png" alt="JANU MOTORS" className="h-12 w-12 icon-glow animate-pulse-gold" />
                             </div>
                         </div>
                         

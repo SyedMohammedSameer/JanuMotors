@@ -107,36 +107,52 @@ const Sidebar = () => {
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:static inset-y-0 left-0 z-40 w-80 lg:w-72 xl:w-80 
-        transform transition-transform duration-300 ease-in-out
+        fixed lg:static inset-y-0 left-0 z-40 
+        transform transition-all duration-300 ease-in-out
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        ${isCollapsed ? 'lg:w-20' : ''}
+        ${isCollapsed ? 'lg:w-20' : 'w-80 lg:w-72 xl:w-80'}
       `}>
-        <div className="h-full flex flex-col nav-glass border-r border-primary-500/10">
+        <div className="h-full flex flex-col nav-glass border-r border-primary-500/10 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between h-20 px-6 border-b border-primary-500/10">
-            <div className={`flex items-center space-x-3 transition-all duration-300 ${isCollapsed ? 'lg:justify-center' : ''}`}>
-              <div className="relative">
-                <WrenchScrewdriverIcon className="h-10 w-10 text-primary-500 icon-glow animate-pulse-gold" />
+          <div className="flex items-center justify-between h-20 px-6 border-b border-primary-500/10 flex-shrink-0">
+            <div className={`flex items-center transition-all duration-300 ${isCollapsed ? 'lg:justify-center lg:w-full' : 'space-x-3'}`}>
+              <div className="relative flex-shrink-0">
+                <img src="/assets/logo.png" alt="JANU MOTORS" className="h-10 w-10 icon-glow animate-pulse-gold" />
                 <div className="absolute inset-0 h-10 w-10 bg-primary-500/20 rounded-full blur-xl"></div>
               </div>
-              {!isCollapsed && (
-                <div className="flex flex-col">
+              <div className={`transition-all duration-300 overflow-hidden ${
+                isCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'
+              }`}>
+                <div className="flex flex-col whitespace-nowrap">
                   <span className="text-xl font-bold text-gradient">JANU MOTORS</span>
                   <span className="text-xs text-primary-500/80 font-medium tracking-wider">PREMIUM GARAGE</span>
                 </div>
-              )}
+              </div>
             </div>
             
             {/* Collapse Toggle - Desktop Only */}
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:flex p-2 rounded-lg text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300"
+              className={`hidden lg:flex p-2 rounded-lg text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300 flex-shrink-0 ${
+                isCollapsed ? 'lg:hidden' : ''
+              }`}
             >
               <svg className={`h-5 w-5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
+
+            {/* Collapsed Header Toggle */}
+            {isCollapsed && (
+              <button
+                onClick={() => setIsCollapsed(false)}
+                className="hidden lg:block absolute top-6 right-[-15px] p-1.5 rounded-full bg-primary-500 text-black hover:bg-primary-400 transition-all duration-300 shadow-gold"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Navigation */}
@@ -166,29 +182,30 @@ const Sidebar = () => {
                       } ${isCollapsed ? '' : 'mr-4'}`} 
                     />
                     
-                    {!isCollapsed && (
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span className="truncate font-semibold">
-                          {item.name}
-                        </span>
-                        <span className={`text-xs truncate ${
-                          isActive ? 'text-black/70' : 'text-white/50 group-hover:text-white/70'
-                        }`}>
-                          {item.description}
-                        </span>
-                      </div>
-                    )}
+                    <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 overflow-hidden ${
+                      isCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'
+                    }`}>
+                      <span className="truncate font-semibold whitespace-nowrap">
+                        {item.name}
+                      </span>
+                      <span className={`text-xs truncate whitespace-nowrap ${
+                        isActive ? 'text-black/70' : 'text-white/50 group-hover:text-white/70'
+                      }`}>
+                        {item.description}
+                      </span>
+                    </div>
 
                     {/* Active Indicator */}
-                    {isActive && (
+                    {isActive && !isCollapsed && (
                       <div className="absolute right-2 w-2 h-2 bg-black rounded-full animate-pulse"></div>
                     )}
 
                     {/* Tooltip for collapsed state */}
                     {isCollapsed && (
-                      <div className="absolute left-full ml-4 px-3 py-2 bg-dark-50 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 border border-primary-500/20">
+                      <div className="absolute left-full ml-4 px-3 py-2 bg-dark-50 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 border border-primary-500/20 shadow-luxury">
                         <div className="font-semibold">{item.name}</div>
                         <div className="text-xs text-white/70">{item.description}</div>
+                        <div className="absolute left-[-6px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-dark-50"></div>
                       </div>
                     )}
 
@@ -201,17 +218,21 @@ const Sidebar = () => {
           </nav>
 
           {/* Footer */}
-          {!isCollapsed && (
-            <div className="p-6 border-t border-primary-500/10">
-              <div className="flex items-center space-x-3 p-4 rounded-xl bg-gradient-to-r from-primary-500/10 to-accent/10 border border-primary-500/20">
-                <div className="flex-shrink-0 w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">System Status</p>
-                  <p className="text-xs text-primary-500">All systems operational</p>
-                </div>
+          <div className={`p-6 border-t border-primary-500/10 flex-shrink-0 transition-all duration-300 ${
+            isCollapsed ? 'lg:px-3' : ''
+          }`}>
+            <div className={`flex items-center p-4 rounded-xl bg-gradient-to-r from-primary-500/10 to-accent/10 border border-primary-500/20 transition-all duration-300 ${
+              isCollapsed ? 'lg:justify-center' : 'space-x-3'
+            }`}>
+              <div className="flex-shrink-0 w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
+              <div className={`flex-1 transition-all duration-300 overflow-hidden ${
+                isCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'
+              }`}>
+                <p className="text-sm font-medium text-white whitespace-nowrap">System Status</p>
+                <p className="text-xs text-primary-500 whitespace-nowrap">All systems operational</p>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </>
