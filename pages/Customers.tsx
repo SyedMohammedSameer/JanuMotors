@@ -9,13 +9,20 @@ const Customers = () => {
     const { state, dispatch } = useAppContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', address: '' });
+    const [newCustomer, setNewCustomer] = useState({ 
+        name: '', 
+        email: '', 
+        phone: '', 
+        address: '', 
+        coupon_id: '' 
+    });
 
     const filteredCustomers = useMemo(() => {
         return state.customers.filter(customer =>
             customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (customer.phone && customer.phone.includes(searchTerm)) ||
-            (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
+            (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.coupon_id && customer.coupon_id.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }, [state.customers, searchTerm]);
 
@@ -24,13 +31,14 @@ const Customers = () => {
         const customerToAdd: Customer = {
             ...newCustomer,
             id: `C${Date.now()}`, // Supabase will generate a real UUID if not provided
+            coupon_id: newCustomer.coupon_id || undefined, // Convert empty string to undefined
             communication_log: [],
             service_history: [],
             created_at: new Date().toISOString()
         };
         await dispatch({ type: 'ADD_CUSTOMER', payload: customerToAdd });
         setIsModalOpen(false);
-        setNewCustomer({ name: '', email: '', phone: '', address: '' });
+        setNewCustomer({ name: '', email: '', phone: '', address: '', coupon_id: '' });
     };
 
     return (
@@ -47,7 +55,7 @@ const Customers = () => {
             <div className="mb-4">
                 <input
                     type="text"
-                    placeholder="Search by name, phone, or email..."
+                    placeholder="Search by name, phone, email, or coupon ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -59,6 +67,7 @@ const Customers = () => {
                         <tr>
                             <th scope="col" className="px-6 py-3">Name</th>
                             <th scope="col" className="px-6 py-3">Contact</th>
+                            <th scope="col" className="px-6 py-3">Coupon ID</th>
                             <th scope="col" className="px-6 py-3">Vehicles</th>
                             <th scope="col" className="px-6 py-3">Actions</th>
                         </tr>
@@ -70,6 +79,15 @@ const Customers = () => {
                                 <td className="px-6 py-4">
                                     <div>{customer.phone}</div>
                                     <div className="text-xs text-gray-400">{customer.email}</div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {customer.coupon_id ? (
+                                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full dark:bg-green-900/50 dark:text-green-300">
+                                            {customer.coupon_id}
+                                        </span>
+                                    ) : (
+                                        <span className="text-gray-400 text-xs">No coupon</span>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4">{state.vehicles.filter(v => v.owner_id === customer.id).length}</td>
                                 <td className="px-6 py-4">
@@ -85,10 +103,44 @@ const Customers = () => {
             </div>
             <Modal title="Add New Customer" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <form onSubmit={handleAddCustomer} className="space-y-4">
-                    <input type="text" placeholder="Full Name" value={newCustomer.name} onChange={e => setNewCustomer({...newCustomer, name: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" required/>
-                    <input type="email" placeholder="Email Address" value={newCustomer.email} onChange={e => setNewCustomer({...newCustomer, email: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" required/>
-                    <input type="tel" placeholder="Phone Number" value={newCustomer.phone} onChange={e => setNewCustomer({...newCustomer, phone: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" required/>
-                    <input type="text" placeholder="Address" value={newCustomer.address} onChange={e => setNewCustomer({...newCustomer, address: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                    <input 
+                        type="text" 
+                        placeholder="Full Name" 
+                        value={newCustomer.name} 
+                        onChange={e => setNewCustomer({...newCustomer, name: e.target.value})} 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" 
+                        required
+                    />
+                    <input 
+                        type="email" 
+                        placeholder="Email Address" 
+                        value={newCustomer.email} 
+                        onChange={e => setNewCustomer({...newCustomer, email: e.target.value})} 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" 
+                        required
+                    />
+                    <input 
+                        type="tel" 
+                        placeholder="Phone Number" 
+                        value={newCustomer.phone} 
+                        onChange={e => setNewCustomer({...newCustomer, phone: e.target.value})} 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" 
+                        required
+                    />
+                    <input 
+                        type="text" 
+                        placeholder="Address" 
+                        value={newCustomer.address} 
+                        onChange={e => setNewCustomer({...newCustomer, address: e.target.value})} 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" 
+                    />
+                    <input 
+                        type="text" 
+                        placeholder="Coupon ID (Optional)" 
+                        value={newCustomer.coupon_id} 
+                        onChange={e => setNewCustomer({...newCustomer, coupon_id: e.target.value})} 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" 
+                    />
                     <div className="flex justify-end space-x-2">
                         <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300">Cancel</button>
                         <button type="submit" className="px-4 py-2 rounded bg-primary-600 text-white hover:bg-primary-700">Save Customer</button>

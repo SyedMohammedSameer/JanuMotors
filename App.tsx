@@ -13,6 +13,7 @@ import Inventory from './pages/Inventory';
 import Workers from './pages/Workers';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import CarWashScheduling from './pages/CarWashScheduling';
 import { useAppContext } from './context/AppContext';
 import Payroll from './pages/Payroll';
 import { WrenchScrewdriverIcon, Cog6ToothIcon, XMarkIcon } from './components/Icons';
@@ -159,6 +160,7 @@ const router = createHashRouter([
       { path: "inventory", element: <Inventory />, handle: { crumb: 'Inventory' } },
       { path: "workers", element: <Workers />, handle: { crumb: 'Workers' } },
       { path: "payroll", element: <Payroll />, handle: { crumb: 'Payroll' } },
+      { path: "car-wash", element: <CarWashScheduling />, handle: { crumb: 'Car Wash Scheduling' } },
       { path: "settings", element: <Settings />, handle: { crumb: 'Settings' } },
     ],
   },

@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, useContext, ReactNode, useEffect } from 'react';
-import { Customer, Vehicle, JobCard, Invoice, InventoryItem, Worker, AttendanceRecord, PayrollRecord, JobStatus, PaymentStatus } from '../types';
+import { Customer, Vehicle, JobCard, Invoice, InventoryItem, Worker, AttendanceRecord, PayrollRecord, CarWashBooking, JobStatus, PaymentStatus } from '../types';
 import { supabase } from '../supabaseClient';
 
 interface AppState {
@@ -15,6 +15,7 @@ interface AppState {
     workers: Worker[];
     attendance: AttendanceRecord[];
     payrollRecords: PayrollRecord[];
+    carwashBookings: CarWashBooking[];
 }
 
 const initialState: AppState = {
@@ -29,7 +30,8 @@ const initialState: AppState = {
     inventory: [],
     workers: [],
     attendance: [],
-    payrollRecords: []
+    payrollRecords: [],
+    carwashBookings: []
 };
 
 type Action =
@@ -55,7 +57,10 @@ type Action =
     | { type: 'UPDATE_ATTENDANCE'; payload: AttendanceRecord }
     | { type: 'ADD_PAYROLL_RECORD'; payload: PayrollRecord }
     | { type: 'UPDATE_PAYROLL_RECORD'; payload: PayrollRecord }
-    | { type: 'DELETE_PAYROLL_RECORD'; payload: { id: string } };
+    | { type: 'DELETE_PAYROLL_RECORD'; payload: { id: string } }
+    | { type: 'ADD_CARWASH_BOOKING'; payload: CarWashBooking }
+    | { type: 'UPDATE_CARWASH_BOOKING'; payload: CarWashBooking }
+    | { type: 'DELETE_CARWASH_BOOKING'; payload: { id: string } };
 
 const appReducer = (state: AppState, action: Action): AppState => {
     switch (action.type) {
@@ -143,6 +148,20 @@ const appReducer = (state: AppState, action: Action): AppState => {
             return { 
                 ...state, 
                 payrollRecords: state.payrollRecords.filter(p => p.id !== action.payload.id),
+                error: null 
+            };
+        case 'ADD_CARWASH_BOOKING':
+            return { ...state, carwashBookings: [...state.carwashBookings, action.payload], error: null };
+        case 'UPDATE_CARWASH_BOOKING':
+            return { 
+                ...state, 
+                carwashBookings: state.carwashBookings.map(b => b.id === action.payload.id ? action.payload : b),
+                error: null 
+            };
+        case 'DELETE_CARWASH_BOOKING':
+            return { 
+                ...state, 
+                carwashBookings: state.carwashBookings.filter(b => b.id !== action.payload.id),
                 error: null 
             };
         default:
@@ -244,7 +263,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     { data: inventory, error: e5 }, 
                     { data: workers, error: e6 }, 
                     { data: attendance, error: e7 }, 
-                    { data: payrollRecords, error: e8 }
+                    { data: payrollRecords, error: e8 },
+                    { data: carwashBookings, error: e9 }
                 ] = await Promise.all([
                     supabase.from('customers').select('*'),
                     supabase.from('vehicles').select('*'),
@@ -254,9 +274,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     supabase.from('workers').select('*'),
                     supabase.from('attendance').select('*'),
                     supabase.from('payroll').select('*'),
+                    supabase.from('carwash_bookings').select('*'),
                 ]);
 
-                const errors = [e1, e2, e3, e4, e5, e6, e7, e8].filter(Boolean);
+                const errors = [e1, e2, e3, e4, e5, e6, e7, e8, e9].filter(Boolean);
                 if (errors.length > 0) {
                     throw errors[0]; // Throw the first error encountered
                 }
@@ -272,6 +293,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                         workers: workers || [],
                         attendance: attendance || [],
                         payrollRecords: payrollRecords || [],
+                        carwashBookings: carwashBookings || [],
                     }
                 });
 
@@ -440,6 +462,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                 case 'DELETE_PAYROLL_RECORD': {
                     const result = await retryOperation(async () =>
                         supabase.from('payroll').delete().eq('id', action.payload.id)
+                    );
+                    if (result.error) throw result.error;
+                    baseDispatch(action);
+                    break;
+                }
+                case 'ADD_CARWASH_BOOKING': {
+                    const result = await retryOperation(async () =>
+                        supabase.from('carwash_bookings').insert(action.payload).select()
+                    );
+                    if (result.error) throw result.error;
+                    baseDispatch({ ...action, payload: result.data[0] });
+                    break;
+                }
+                case 'UPDATE_CARWASH_BOOKING': {
+                    const result = await retryOperation(async () =>
+                        supabase.from('carwash_bookings').update(action.payload).eq('id', action.payload.id)
+                    );
+                    if (result.error) throw result.error;
+                    baseDispatch(action);
+                    break;
+                }
+                case 'DELETE_CARWASH_BOOKING': {
+                    const result = await retryOperation(async () =>
+                        supabase.from('carwash_bookings').delete().eq('id', action.payload.id)
                     );
                     if (result.error) throw result.error;
                     baseDispatch(action);

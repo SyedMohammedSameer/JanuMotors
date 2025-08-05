@@ -28,6 +28,7 @@ export interface Customer {
   phone: string;
   email: string;
   address: string;
+  coupon_id?: string; // Optional coupon ID
   communication_log: CommunicationLog[];
   service_history: ServiceHistory[];
   created_at: string;
@@ -113,4 +114,18 @@ export interface PayrollRecord {
   year: number;
   amount: number;
   notes?: string;
+}
+
+// New types for Car Wash Scheduling
+export interface CarWashBooking {
+  id: string;
+  customer_id: string;
+  vehicle_id: string;
+  date: string; // YYYY-MM-DD format
+  time_slot: string; // HH:MM format (e.g., "09:00")
+  duration: number; // Duration in minutes
+  service_type: 'Basic Wash' | 'Premium Wash' | 'Full Detail' | 'Interior Only' | 'Exterior Only';
+  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+  notes?: string;
+  created_at: string;
 }
