@@ -1,0 +1,5 @@
+{
+  "name": "Car Garage Management System",
+  "description": "A comprehensive web application for managing all aspects of a car garage, including customer management, invoicing, job cards, inventory, and worker attendance.",
+  "requestFramePermissions": []
+}
