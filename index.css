@@ -1,0 +1,85 @@
+/* Global styles for JANU MOTORS */
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+    }
+  }
+  
+  /* Print styles */
+  @media print {
+    .print\\:hidden {
+      display: none !important;
+    }
+    
+    body {
+      background: white !important;
+      color: black !important;
+    }
+    
+    * {
+      background: transparent !important;
+      color: black !important;
+      box-shadow: none !important;
+    }
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  
+  .dark ::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+  
+  /* Loading animation */
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  /* Focus styles */
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  /* Table responsive */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Custom utilities */
+  .transition-all {
+    transition: all 0.15s ease-in-out;
+  }

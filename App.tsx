@@ -15,7 +15,7 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import { useAppContext } from './context/AppContext';
 import Payroll from './pages/Payroll';
-import { WrenchScrewdriverIcon, Cog6ToothIcon } from './components/Icons';
+import { WrenchScrewdriverIcon, Cog6ToothIcon, XMarkIcon } from './components/Icons';
 
 const LoadingSpinner = () => (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100 dark:bg-gray-800">
@@ -58,6 +58,37 @@ const ConfigurationNeededScreen = () => (
     </div>
 );
 
+const ErrorBanner = () => {
+    const { state, clearError } = useAppContext();
+    
+    if (!state.error) return null;
+
+    return (
+        <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4 mb-4">
+            <div className="flex justify-between items-start">
+                <div className="flex">
+                    <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                    <div className="ml-3">
+                        <p className="text-sm text-red-800 dark:text-red-200">
+                            {state.error}
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onClick={clearError}
+                    className="flex-shrink-0 ml-4 text-red-400 hover:text-red-600"
+                >
+                    <XMarkIcon className="h-5 w-5" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const AppLayout = () => {
   const { state } = useAppContext();
   
@@ -75,6 +106,7 @@ const AppLayout = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-800 p-6">
+          <ErrorBanner />
           <Outlet />
         </main>
       </div>

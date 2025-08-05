@@ -1,16 +1,3 @@
-export enum UserRole {
-  ADMIN = 'Admin',
-  MECHANIC = 'Mechanic',
-  RECEPTIONIST = 'Receptionist',
-}
-
-export interface User {
-  id: string;
-  name: string;
-  role: UserRole;
-  email: string;
-}
-
 export interface Vehicle {
   id: string;
   make: string;
@@ -22,17 +9,17 @@ export interface Vehicle {
 }
 
 export interface CommunicationLog {
-  id:string;
+  id: string;
   date: string;
   type: 'Call' | 'Visit' | 'Email';
   notes: string;
 }
 
 export interface ServiceHistory {
-    id: string;
-    date: string;
-    description: string;
-    cost: number;
+  id: string;
+  date: string;
+  description: string;
+  cost: number;
 }
 
 export interface Customer {
@@ -59,7 +46,7 @@ export interface JobCard {
   customer_id: string;
   description: string;
   status: JobStatus;
-  assigned_to: string; // Worker ID
+  assigned_to: string;
   parts_used: { itemId: string; quantity: number }[];
   labor_hours: number;
   created_at: string;
@@ -73,10 +60,10 @@ export enum PaymentStatus {
 }
 
 export interface InvoiceItem {
-    description: string;
-    quantity: number;
-    unit_price: number;
-    total: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
 }
 
 export interface Invoice {
@@ -87,8 +74,8 @@ export interface Invoice {
   due_date: string;
   items: InvoiceItem[];
   subtotal: number;
-  tax: number; // percentage
-  discount?: number; // amount
+  tax: number;
+  discount?: number;
   total: number;
   payment_status: PaymentStatus;
   payment_method?: 'Cash' | 'Card' | 'Transfer';
@@ -111,19 +98,19 @@ export interface Worker {
 }
 
 export interface AttendanceRecord {
-    id: string;
-    worker_id: string;
-    clock_in: string;
-    clock_out?: string;
-    date: string;
-    daily_pay?: number;
+  id: string;
+  worker_id: string;
+  clock_in: string;
+  clock_out?: string;
+  date: string;
+  daily_pay?: number;
 }
 
 export interface PayrollRecord {
-    id: string;
-    worker_id: string;
-    month: number; // 0-11 for Jan-Dec
-    year: number;
-    amount: number;
-    notes?: string;
+  id: string;
+  worker_id: string;
+  month: number;
+  year: number;
+  amount: number;
+  notes?: string;
 }
