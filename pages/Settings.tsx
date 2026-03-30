@@ -42,41 +42,54 @@ const ShieldCheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+const load = <T,>(key: string, fallback: T): T => {
+    try {
+        const saved = localStorage.getItem(key);
+        if (saved) return JSON.parse(saved) as T;
+    } catch {}
+    return fallback;
+};
+
 const Settings = () => {
-    const [businessInfo, setBusinessInfo] = useState({
+    const [businessInfo, setBusinessInfo] = useState(() => load('settings_businessInfo', {
         name: 'JANU MOTORS',
         address: 'Opposite Sitara Gardens, Tilak Nagar, Kadapa',
         phone: '+91 98765 43210',
         email: 'contact@janumotor.com'
-    });
+    }));
 
-    const [financialSettings, setFinancialSettings] = useState({
-        taxRate: 5,
+    const [financialSettings, setFinancialSettings] = useState(() => load('settings_financialSettings', {
+        taxRate: 18,
         laborRate: 80,
-        currency: 'USD'
-    });
+        currency: 'INR'
+    }));
 
-    const [notifications, setNotifications] = useState({
+    const [notifications, setNotifications] = useState(() => load('settings_notifications', {
         emailAlerts: true,
         lowStockAlerts: true,
         invoiceReminders: true,
         dailyReports: false
-    });
+    }));
 
-    const [preferences, setPreferences] = useState({
+    const [preferences, setPreferences] = useState(() => load('settings_preferences', {
         theme: 'dark',
         language: 'en',
         timezone: 'UTC+5:30'
-    });
+    }));
 
     const [isSaving, setIsSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     const handleSave = async () => {
         setIsSaving(true);
-        // Simulate save operation
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        localStorage.setItem('settings_businessInfo', JSON.stringify(businessInfo));
+        localStorage.setItem('settings_financialSettings', JSON.stringify(financialSettings));
+        localStorage.setItem('settings_notifications', JSON.stringify(notifications));
+        localStorage.setItem('settings_preferences', JSON.stringify(preferences));
+        await new Promise(resolve => setTimeout(resolve, 500));
         setIsSaving(false);
-        // Show success message (could be implemented with toast)
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
     };
 
     return (
@@ -335,8 +348,11 @@ const Settings = () => {
             </div>
 
             {/* Save Button */}
-            <div className="flex justify-end">
-                <button 
+            <div className="flex justify-end items-center gap-4">
+                {saveSuccess && (
+                    <p className="text-sm text-green-400 font-medium">✓ Settings saved successfully</p>
+                )}
+                <button
                     onClick={handleSave}
                     disabled={isSaving}
                     className="btn-luxury px-8 py-3 rounded-xl flex items-center space-x-2 disabled:opacity-50"

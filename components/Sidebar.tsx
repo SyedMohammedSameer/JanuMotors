@@ -114,45 +114,31 @@ const Sidebar = () => {
       `}>
         <div className="h-full flex flex-col nav-glass border-r border-primary-500/10 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between h-20 px-6 border-b border-primary-500/10 flex-shrink-0">
-            <div className={`flex items-center transition-all duration-300 ${isCollapsed ? 'lg:justify-center lg:w-full' : 'space-x-3'}`}>
+          <div className="flex items-center justify-between h-20 px-4 border-b border-primary-500/10 flex-shrink-0">
+            <div className={`flex items-center min-w-0 transition-all duration-300 ${isCollapsed ? 'lg:justify-center lg:w-full' : 'gap-3 flex-1'}`}>
               <div className="relative flex-shrink-0">
-                <img src="/assets/logo.png" alt="JANU MOTORS" className="h-10 w-10 icon-glow animate-pulse-gold" />
-                <div className="absolute inset-0 h-10 w-10 bg-primary-500/20 rounded-full blur-xl"></div>
+                <img src="/assets/logo.png" alt="JANU MOTORS" className="h-10 w-10 rounded-lg icon-glow" />
               </div>
-              <div className={`transition-all duration-300 overflow-hidden ${
-                isCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'
+              <div className={`transition-all duration-300 overflow-hidden flex-1 min-w-0 ${
+                isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'
               }`}>
                 <div className="flex flex-col whitespace-nowrap">
-                  <span className="text-xl font-bold text-gradient">JANU MOTORS</span>
+                  <span className="text-lg font-bold text-white">JANU MOTORS</span>
                   <span className="text-xs text-primary-500/80 font-medium tracking-wider">PREMIUM GARAGE</span>
                 </div>
               </div>
             </div>
-            
-            {/* Collapse Toggle - Desktop Only */}
+
+            {/* Collapse Toggle - Desktop Only, always visible */}
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className={`hidden lg:flex p-2 rounded-lg text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300 flex-shrink-0 ${
-                isCollapsed ? 'lg:hidden' : ''
-              }`}
+              className="hidden lg:flex flex-shrink-0 p-2 rounded-lg text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300"
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <svg className={`h-5 w-5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-
-            {/* Collapsed Header Toggle */}
-            {isCollapsed && (
-              <button
-                onClick={() => setIsCollapsed(false)}
-                className="hidden lg:block absolute top-6 right-[-15px] p-1.5 rounded-full bg-primary-500 text-black hover:bg-primary-400 transition-all duration-300 shadow-gold"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            )}
           </div>
 
           {/* Navigation */}
@@ -176,10 +162,10 @@ const Sidebar = () => {
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon 
-                      className={`h-6 w-6 flex-shrink-0 transition-colors duration-300 ${
+                    <item.icon
+                      className={`h-5 w-5 flex-shrink-0 transition-colors duration-300 ${
                         isActive ? 'text-black' : 'text-primary-500 group-hover:text-primary-400'
-                      } ${isCollapsed ? '' : 'mr-4'}`} 
+                      } ${isCollapsed ? '' : 'mr-3'}`}
                     />
                     
                     <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 overflow-hidden ${
