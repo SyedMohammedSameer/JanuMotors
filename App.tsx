@@ -205,7 +205,7 @@ const AppLayout = () => {
   return (
     <div className="flex min-h-screen bg-gradient-luxury">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-72 xl:pl-80">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
         <main className="flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-x-hidden">
           <div className="page-transition">
