@@ -158,11 +158,11 @@ const Invoices = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gradient flex items-center">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
                         <DocumentTextIcon className="h-8 w-8 mr-3 text-primary-500" />
                         Invoice Management
                     </h1>
@@ -179,7 +179,7 @@ const Invoices = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                 <div className="card-luxury p-4 border-l-4 border-primary-500">
                     <div className="text-center">
                         <p className="text-sm font-medium text-white/70">Total</p>
@@ -223,8 +223,8 @@ const Invoices = () => {
             </div>
 
             {/* Search and Filter */}
-            <div className="card-luxury p-6">
-                <div className="flex flex-col lg:flex-row gap-4">
+            <div className="card-luxury p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <div className="flex-1 relative">
                         <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500/50" />
                         <input
@@ -253,7 +253,7 @@ const Invoices = () => {
             </div>
 
             {/* Invoices Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {filteredInvoices.map(invoice => {
                     const customer = state.customers.find(c => c.id === invoice.customer_id);
                     const daysOverdue = invoice.payment_status === PaymentStatus.UNPAID ? 

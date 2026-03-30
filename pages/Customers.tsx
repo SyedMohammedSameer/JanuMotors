@@ -93,11 +93,11 @@ const Customers = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
             {/* Header Section */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gradient flex items-center">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
                         <UsersIcon className="h-8 w-8 mr-3 text-primary-500" />
                         Customer Management
                     </h1>
@@ -114,14 +114,14 @@ const Customers = () => {
             </div>
 
             {/* Search and Filter Section */}
-            <div className="card-luxury p-6">
-                <div className="flex flex-col lg:flex-row gap-4">
+            <div className="card-luxury p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     {/* Search Bar */}
                     <div className="flex-1 relative">
                         <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500/50" />
                         <input
                             type="text"
-                            placeholder="Search customers by name, phone, email, or coupon ID..."
+                            placeholder="Search by name, phone or email..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="form-input w-full pl-12 pr-4 py-3 text-white placeholder-white/50"
@@ -158,7 +158,7 @@ const Customers = () => {
             </div>
 
             {/* Customers Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {filteredCustomers.map(customer => (
                     <div key={customer.id} className="card-luxury p-6 group">
                         {/* Customer Header */}

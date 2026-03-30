@@ -207,7 +207,7 @@ const AppLayout = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 lg:pl-72 xl:pl-80">
         <Header />
-        <main className="flex-1 p-6 lg:p-8 overflow-x-hidden">
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-x-hidden">
           <div className="page-transition">
             <ErrorBanner />
             <Outlet />

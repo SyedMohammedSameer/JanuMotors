@@ -49,8 +49,8 @@ const Header = () => {
     });
 
     return (
-        <header className="sticky top-0 z-30 h-20 glass border-b border-primary-500/10 px-6 lg:px-8">
-            <div className="flex items-center justify-between h-full">
+        <header className="sticky top-0 z-30 glass border-b border-primary-500/10 px-4 lg:px-8">
+            <div className="flex items-center justify-between h-16 sm:h-20">
                 {/* Left Section - Breadcrumbs */}
                 <div className="flex items-center space-x-4 flex-1">
                     {/* Mobile spacing */}

@@ -30,8 +30,8 @@ const Card: React.FC<CardProps> = ({
     : '';
 
   return (
-    <div 
-      className={`card-luxury p-6 transition-all duration-300 group ${cardClasses}`}
+    <div
+      className={`card-luxury p-4 sm:p-5 lg:p-6 transition-all duration-300 group ${cardClasses}`}
       onClick={onClick}
     >
       {/* Background Gradient Overlay */}
@@ -96,9 +96,9 @@ const Card: React.FC<CardProps> = ({
         {/* Value */}
         <div className="mb-2">
           <p className={`
-            text-3xl font-bold transition-all duration-300
-            ${gradient 
-              ? 'text-gradient' 
+            text-xl sm:text-2xl lg:text-3xl font-bold transition-all duration-300
+            ${gradient
+              ? 'text-gradient'
               : 'text-white group-hover:text-primary-400'
             }
           `}>
