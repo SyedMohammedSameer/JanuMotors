@@ -106,8 +106,10 @@ const Invoices = () => {
         const job = state.jobCards.find(j => j.id === selectedJobId);
         if (!job) return;
         
-        const laborRate = 80;
-        
+        const savedFinancial = localStorage.getItem('settings_financialSettings');
+        const settingsTaxRate = savedFinancial ? JSON.parse(savedFinancial).taxRate : 18;
+        const laborRate = savedFinancial ? JSON.parse(savedFinancial).laborRate : 80;
+
         const laborItem: InvoiceItem = {
             description: 'Labor',
             quantity: job.labor_hours,
@@ -128,9 +130,8 @@ const Invoices = () => {
 
         const items = [laborItem, ...partItems];
         const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-        const taxRate = 0.05;
-        const tax = subtotal * taxRate;
-        const total = subtotal + tax;
+        const taxAmount = subtotal * (settingsTaxRate / 100);
+        const total = subtotal + taxAmount;
 
         const newInvoice: Invoice = {
             id: `INV${Date.now()}`,
@@ -140,7 +141,7 @@ const Invoices = () => {
             due_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             items,
             subtotal,
-            tax: taxRate * 100,
+            tax: settingsTaxRate,
             discount: 0,
             total,
             payment_status: PaymentStatus.UNPAID
