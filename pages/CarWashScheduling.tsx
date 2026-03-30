@@ -46,6 +46,7 @@ const CarWashScheduling = () => {
     const [newBooking, setNewBooking] = useState({
         customer_id: '',
         vehicle_id: '',
+        walk_in_name: '',
         service_type: 'Basic Wash' as CarWashBooking['service_type'],
         duration: 60,
         notes: ''
@@ -93,6 +94,7 @@ const CarWashScheduling = () => {
         setNewBooking({
             customer_id: '',
             vehicle_id: '',
+            walk_in_name: '',
             service_type: 'Basic Wash',
             duration: 60,
             notes: ''
@@ -102,11 +104,17 @@ const CarWashScheduling = () => {
 
     const handleBookingSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
+        // Require either a registered customer or a walk-in name
+        if (!newBooking.customer_id && !newBooking.walk_in_name.trim()) {
+            alert('Please select a customer or enter a walk-in name.');
+            return;
+        }
+
         const booking: CarWashBooking = {
             id: `CW${Date.now()}`,
-            customer_id: newBooking.customer_id,
-            vehicle_id: newBooking.vehicle_id,
+            customer_id: newBooking.customer_id || newBooking.walk_in_name.trim(),
+            vehicle_id: newBooking.vehicle_id || '',
             date: selectedDate,
             time_slot: selectedTimeSlot,
             duration: newBooking.duration,
@@ -388,30 +396,46 @@ const CarWashScheduling = () => {
                 <form onSubmit={handleBookingSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Customer *</label>
+                            <label className="block text-sm font-medium text-white/80 mb-2">
+                                Registered Customer
+                            </label>
                             <select
                                 value={newBooking.customer_id}
-                                onChange={(e) => setNewBooking({ ...newBooking, customer_id: e.target.value, vehicle_id: '' })}
+                                onChange={(e) => setNewBooking({ ...newBooking, customer_id: e.target.value, vehicle_id: '', walk_in_name: '' })}
                                 className="form-input w-full px-4 py-3"
-                                required
                             >
-                                <option value="">Select Customer</option>
-                                {state.customers.map(customer => (
-                                    <option key={customer.id} value={customer.id}>{customer.name}</option>
+                                <option value="">— Select or use Walk-in below —</option>
+                                {state.customers.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Vehicle *</label>
+                            <label className="block text-sm font-medium text-white/80 mb-2">
+                                Walk-in Name <span className="text-white/40 text-xs">(if not registered)</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={newBooking.walk_in_name}
+                                onChange={(e) => setNewBooking({ ...newBooking, walk_in_name: e.target.value, customer_id: '' })}
+                                className="form-input w-full px-4 py-3"
+                                placeholder="e.g. Rahul Kumar"
+                                disabled={!!newBooking.customer_id}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-white/80 mb-2">
+                                Vehicle <span className="text-white/40 text-xs">(optional)</span>
+                            </label>
                             <select
                                 value={newBooking.vehicle_id}
                                 onChange={(e) => setNewBooking({ ...newBooking, vehicle_id: e.target.value })}
                                 className="form-input w-full px-4 py-3"
                                 disabled={!newBooking.customer_id}
-                                required
                             >
-                                <option value="">Select Vehicle</option>
+                                <option value="">— No vehicle / not linked —</option>
                                 {customerVehicles.map(vehicle => (
                                     <option key={vehicle.id} value={vehicle.id}>
                                         {vehicle.make} {vehicle.model} ({vehicle.license_plate})
