@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WrenchScrewdriverIcon } from '../components/Icons';
 import { useAppContext } from '../context/AppContext';
+import { supabase } from '../supabaseClient';
 
 // Eye Icons for password visibility
 const EyeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -22,16 +23,29 @@ const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
     const { dispatch } = useAppContext();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        
-        // Simulate login delay for better UX
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        setError('');
+
+        if (!supabase) {
+            setError('Database not configured. Check your environment variables.');
+            setIsLoading(false);
+            return;
+        }
+
+        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (authError) {
+            setError(authError.message);
+            setIsLoading(false);
+            return;
+        }
+
         dispatch({ type: 'LOGIN' });
         navigate('/', { replace: true });
     };
@@ -167,14 +181,12 @@ const Login: React.FC = () => {
                         </button>
                     </form>
 
-                    {/* Demo Info */}
-                    <div className="text-center space-y-3">
-                        <div className="h-px bg-gradient-to-r from-transparent via-primary-500/30 to-transparent"></div>
-                        <div className="glass rounded-lg p-4 border border-primary-500/20">
-                            <p className="text-sm text-white/60 mb-2">Demo Access</p>
-                            <p className="text-xs text-primary-500/80">Any email and password will work for this demo</p>
+                    {/* Error Message */}
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                            <p className="text-sm text-red-400 text-center">{error}</p>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Footer */}
