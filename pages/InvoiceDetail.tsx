@@ -1,185 +1,258 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { PaymentStatus, Invoice, InvoiceItem } from '../types';
+import { PaymentStatus, Invoice, InvoiceItem, Customer, Vehicle } from '../types';
 import { ArrowDownTrayIcon, PencilIcon, TrashIcon, PlusIcon } from '../components/Icons';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
 
 const CGST_RATE = 9;
 const SGST_RATE = 9;
-const GOLD = '#B8860B';
-const GOLD_LIGHT = '#F5C518';
 
-// ─── White paper invoice rendered off-screen for PDF capture ───────────────
-const PrintInvoice = ({ invoice, customer, vehicle }: {
-    invoice: Invoice;
-    customer: any;
-    vehicle: any;
-}) => {
-    const cgstAmt = invoice.subtotal * (CGST_RATE / 100);
-    const sgstAmt = invoice.subtotal * (SGST_RATE / 100);
-    const total   = invoice.subtotal + cgstAmt + sgstAmt - (invoice.discount || 0);
+// ─── Pure jsPDF invoice builder (no screenshots) ────────────────────────────
+async function buildInvoicePDF(
+    invoice: Invoice,
+    customer: Customer | undefined,
+    vehicle: Vehicle | undefined
+) {
+    const doc  = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const W    = doc.internal.pageSize.getWidth();   // 210
+    const M    = 14; // margin
+    const RX   = W - M; // right edge
 
+    // colour helpers
+    const setFill   = (r: number, g: number, b: number) => doc.setFillColor(r, g, b);
+    const setDraw   = (r: number, g: number, b: number) => doc.setDrawColor(r, g, b);
+    const setColor  = (r: number, g: number, b: number) => doc.setTextColor(r, g, b);
+    const bold      = (size: number) => { doc.setFont('helvetica', 'bold');   doc.setFontSize(size); };
+    const normal    = (size: number) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(size); };
+
+    const GOLD   = [184, 134, 11]  as [number,number,number];
+    const BLACK  = [20,  20,  20]  as [number,number,number];
+    const DARK   = [50,  50,  50]  as [number,number,number];
+    const GREY   = [110, 110, 110] as [number,number,number];
+    const LGREY  = [230, 230, 230] as [number,number,number];
+    const WHITE  = [255, 255, 255] as [number,number,number];
+    const GREEN  = [22, 163, 74]   as [number,number,number];
+    const RED    = [220, 38, 38]   as [number,number,number];
+    const AMBER  = [217, 119, 6]   as [number,number,number];
+
+    const cgst  = invoice.subtotal * (CGST_RATE / 100);
+    const sgst  = invoice.subtotal * (SGST_RATE / 100);
+    const total = invoice.subtotal + cgst + sgst - (invoice.discount || 0);
+
+    // ── Top colour bar ──────────────────────────────────────────────────────
+    setFill(20, 20, 20);
+    doc.rect(0, 0, W, 38, 'F');
+
+    // Logo (load from public assets)
+    try {
+        const resp = await fetch('/assets/logo.png');
+        const blob = await resp.blob();
+        const b64: string = await new Promise(res => {
+            const fr = new FileReader();
+            fr.onload = () => res(fr.result as string);
+            fr.readAsDataURL(blob);
+        });
+        doc.addImage(b64, 'PNG', M, 7, 22, 22);
+    } catch { /* logo unavailable, skip */ }
+
+    // Company name
+    bold(16);
+    setColor(...WHITE);
+    doc.text('JANU MOTORS', M + 26, 16);
+
+    normal(8);
+    setColor(190, 190, 190);
+    doc.text('Opposite Sitara Gardens, Tilak Nagar, Kadapa', M + 26, 22);
+    doc.text('Ph: +91 98765 43210   |   GSTIN: 37XXXXX0000X1XX', M + 26, 27);
+
+    // INVOICE title (top-right)
+    bold(28);
+    setColor(...GOLD);
+    doc.text('INVOICE', RX, 18, { align: 'right' });
+
+    normal(8);
+    setColor(190, 190, 190);
+    doc.text(invoice.id, RX, 25, { align: 'right' });
+    doc.text(`Issued: ${invoice.issue_date}   Due: ${invoice.due_date}`, RX, 31, { align: 'right' });
+
+    // Status badge
     const statusColor =
-        invoice.payment_status === PaymentStatus.PAID    ? '#16a34a' :
-        invoice.payment_status === PaymentStatus.UNPAID  ? '#dc2626' : '#d97706';
+        invoice.payment_status === PaymentStatus.PAID    ? GREEN :
+        invoice.payment_status === PaymentStatus.UNPAID  ? RED   : AMBER;
+    setFill(...statusColor);
+    const sLabel = invoice.payment_status.toUpperCase();
+    bold(7);
+    const sW = doc.getTextWidth(sLabel) + 6;
+    doc.roundedRect(RX - sW, 33, sW, 5, 1, 1, 'F');
+    setColor(...WHITE);
+    doc.text(sLabel, RX - sW / 2, 36.5, { align: 'center' });
 
-    const row = (label: string, value: string, bold = false, big = false, borderTop = false) => (
-        <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '4px 0',
-            borderTop: borderTop ? '2px solid #D4A017' : 'none',
-            marginTop: borderTop ? '6px' : 0,
-        }}>
-            <span style={{ color: '#555', fontSize: big ? 14 : 12, fontWeight: bold ? 700 : 400 }}>{label}</span>
-            <span style={{ color: bold ? '#111' : '#444', fontSize: big ? 16 : 12, fontWeight: bold ? 700 : 500 }}>{value}</span>
-        </div>
+    let y = 46;
+
+    // ── Bill To / Vehicle / Job Ref ─────────────────────────────────────────
+    const col1 = M;
+    const col2 = M + 62;
+    const col3 = M + 124;
+
+    bold(7);
+    setColor(...GOLD);
+    doc.text('BILL TO',       col1, y);
+    doc.text('VEHICLE',       col2, y);
+    doc.text('JOB CARD REF',  col3, y);
+
+    y += 5;
+
+    bold(10);
+    setColor(...BLACK);
+    doc.text(customer?.name  || '—',                     col1, y);
+    doc.text(`${vehicle?.make || ''} ${vehicle?.model || ''}`.trim() || '—', col2, y);
+
+    normal(8);
+    setColor(...DARK);
+    doc.text(invoice.job_card_id, col3, y + 1);
+
+    y += 5;
+    normal(8);
+    setColor(...GREY);
+    if (customer?.phone)   doc.text(customer.phone,   col1, y);
+    if (vehicle?.license_plate) {
+        doc.text(`Reg No: `, col2, y);
+        bold(8); setColor(...DARK);
+        doc.text(vehicle.license_plate, col2 + doc.getTextWidth('Reg No: '), y);
+        normal(8); setColor(...GREY);
+    }
+    y += 4.5;
+    if (customer?.email)   doc.text(customer.email,   col1, y);
+    if (vehicle?.year)     doc.text(`Year: ${vehicle.year}`, col2, y);
+    y += 4.5;
+    if (customer?.address) {
+        const lines = doc.splitTextToSize(customer.address, 55);
+        doc.text(lines, col1, y);
+    }
+
+    y += 10;
+
+    // ── Items Table ─────────────────────────────────────────────────────────
+    autoTable(doc, {
+        startY: y,
+        margin: { left: M, right: M },
+        head: [['#', 'Description', 'Qty', 'Unit Price', 'Amount']],
+        body: invoice.items.map((item, i) => [
+            String(i + 1),
+            item.description,
+            String(item.quantity),
+            `₹${item.unit_price.toFixed(2)}`,
+            `₹${item.total.toFixed(2)}`,
+        ]),
+        headStyles: {
+            fillColor: [20, 20, 20],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8,
+            halign: 'left',
+            cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
+        },
+        bodyStyles: {
+            fontSize: 9,
+            textColor: [40, 40, 40],
+            cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+        },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        columnStyles: {
+            0: { cellWidth: 8,  halign: 'center' },
+            1: { cellWidth: 'auto' },
+            2: { cellWidth: 14, halign: 'center' },
+            3: { cellWidth: 28, halign: 'right' },
+            4: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
+        },
+        tableLineColor: [220, 220, 220],
+        tableLineWidth: 0.2,
+        theme: 'grid',
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 8;
+
+    // ── Totals box (right side) ─────────────────────────────────────────────
+    const boxW  = 70;
+    const boxX  = RX - boxW;
+    const lineH = 6.5;
+
+    // box background
+    setFill(250, 250, 250);
+    setDraw(...LGREY);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(boxX, y, boxW, 44, 2, 2, 'FD');
+
+    const tRow = (label: string, value: string, isBold = false, topLine = false) => {
+        if (topLine) {
+            setDraw(...GOLD);
+            doc.setLineWidth(0.5);
+            doc.line(boxX + 3, y + 1, boxX + boxW - 3, y + 1);
+            y += 3;
+        }
+        if (isBold) { bold(10); setColor(...BLACK); }
+        else        { normal(8); setColor(...DARK); }
+        doc.text(label, boxX + 4, y + 4);
+        doc.text(value, boxX + boxW - 4, y + 4, { align: 'right' });
+        y += lineH;
+    };
+
+    tRow('Subtotal',           `₹${invoice.subtotal.toFixed(2)}`);
+    tRow(`CGST (${CGST_RATE}%)`, `₹${cgst.toFixed(2)}`);
+    tRow(`SGST (${SGST_RATE}%)`, `₹${sgst.toFixed(2)}`);
+    tRow('Discount',           `-₹${(invoice.discount || 0).toFixed(2)}`);
+    tRow('Total Due',          `₹${total.toFixed(2)}`, true, true);
+
+    // ── Signature box (left side) ───────────────────────────────────────────
+    const sigY  = y - (lineH * 5) + 20;  // align with totals box middle
+    setDraw(180, 180, 180);
+    doc.setLineWidth(0.4);
+    doc.line(M, sigY + 16, M + 50, sigY + 16);
+    normal(8); setColor(...GREY);
+    doc.text('Authorised Signatory', M, sigY + 20);
+    bold(8);   setColor(...DARK);
+    doc.text('For JANU MOTORS',      M, sigY + 25);
+
+    y += 12;
+
+    // ── Footer line ─────────────────────────────────────────────────────────
+    setFill(20, 20, 20);
+    doc.rect(0, 282, W, 15, 'F');
+    normal(7.5);
+    setColor(190, 190, 190);
+    doc.text(
+        'Payment is due within 30 days of invoice date   ·   Thank you for choosing Janu Motors!',
+        W / 2, 291,
+        { align: 'center' }
     );
 
-    return (
-        <div id="invoice-pdf" style={{
-            position: 'fixed', left: '-9999px', top: 0,
-            width: 794, background: '#fff', fontFamily: 'Arial, sans-serif',
-            padding: '48px 52px', boxSizing: 'border-box', color: '#222',
-        }}>
+    return doc;
+}
 
-            {/* ── Header ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, paddingBottom: 20, borderBottom: `3px solid ${GOLD}` }}>
-                {/* Left: company */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <img src="/assets/logo.png" alt="JANU MOTORS" style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover' }} />
-                    <div>
-                        <div style={{ fontSize: 22, fontWeight: 900, color: '#111', letterSpacing: 1 }}>JANU MOTORS</div>
-                        <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>Opposite Sitara Gardens, Tilak Nagar, Kadapa</div>
-                        <div style={{ fontSize: 11, color: '#666' }}>Ph: +91 98765 43210</div>
-                        <div style={{ fontSize: 10, color: '#999', fontFamily: 'monospace', marginTop: 2 }}>GSTIN: 37XXXXX0000X1XX</div>
-                    </div>
-                </div>
-
-                {/* Right: invoice meta */}
-                <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 36, fontWeight: 900, color: GOLD, letterSpacing: 3, textTransform: 'uppercase' }}>Invoice</div>
-                    <div style={{ fontSize: 11, color: '#777', fontFamily: 'monospace', marginTop: 2 }}>{invoice.id}</div>
-                    <div style={{ display: 'flex', gap: 20, marginTop: 8, justifyContent: 'flex-end' }}>
-                        <div>
-                            <div style={{ fontSize: 9, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1 }}>Issue Date</div>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: '#333' }}>{invoice.issue_date}</div>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 9, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1 }}>Due Date</div>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: '#333' }}>{invoice.due_date}</div>
-                        </div>
-                    </div>
-                    <div style={{
-                        marginTop: 8, display: 'inline-block',
-                        padding: '3px 12px', borderRadius: 20,
-                        border: `1px solid ${statusColor}`,
-                        color: statusColor, fontSize: 11, fontWeight: 700,
-                    }}>
-                        {invoice.payment_status}
-                    </div>
-                </div>
-            </div>
-
-            {/* ── Bill To / Vehicle / Job Card ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 24, paddingBottom: 18, borderBottom: '1px solid #e5e7eb' }}>
-                <div>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Bill To</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>{customer?.name || '—'}</div>
-                    {customer?.phone    && <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{customer.phone}</div>}
-                    {customer?.email    && <div style={{ fontSize: 11, color: '#555' }}>{customer.email}</div>}
-                    {customer?.address  && <div style={{ fontSize: 11, color: '#777', marginTop: 3 }}>{customer.address}</div>}
-                </div>
-                <div>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Vehicle Details</div>
-                    {vehicle ? (
-                        <>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{vehicle.make} {vehicle.model}</div>
-                            <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
-                                Reg No: <span style={{ fontWeight: 700, color: '#222' }}>{vehicle.license_plate}</span>
-                            </div>
-                            {vehicle.year && <div style={{ fontSize: 11, color: '#777' }}>Year: {vehicle.year}</div>}
-                            {vehicle.vin  && <div style={{ fontSize: 10, color: '#999', fontFamily: 'monospace', marginTop: 2 }}>VIN: {vehicle.vin}</div>}
-                        </>
-                    ) : <div style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>Not linked</div>}
-                </div>
-                <div>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Job Card Ref</div>
-                    <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#444' }}>{invoice.job_card_id}</div>
-                </div>
-            </div>
-
-            {/* ── Items Table ── */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
-                <thead>
-                    <tr style={{ background: '#1a1a1a' }}>
-                        <th style={{ padding: '10px 12px', textAlign: 'left',   color: '#fff', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Description</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'center', color: '#fff', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, width: 60 }}>Qty</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'right',  color: '#fff', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, width: 110 }}>Unit Price</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'right',  color: '#fff', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, width: 110 }}>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {invoice.items.map((item, i) => (
-                        <tr key={i} style={{ background: i % 2 === 0 ? '#fafafa' : '#fff', borderBottom: '1px solid #f0f0f0' }}>
-                            <td style={{ padding: '10px 12px', fontSize: 12, color: '#222' }}>{item.description}</td>
-                            <td style={{ padding: '10px 12px', fontSize: 12, color: '#555', textAlign: 'center' }}>{item.quantity}</td>
-                            <td style={{ padding: '10px 12px', fontSize: 12, color: '#555', textAlign: 'right' }}>₹{item.unit_price.toFixed(2)}</td>
-                            <td style={{ padding: '10px 12px', fontSize: 12, color: '#222', fontWeight: 600, textAlign: 'right' }}>₹{item.total.toFixed(2)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-
-            {/* ── Totals + Signature ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, paddingTop: 4 }}>
-
-                {/* Signature */}
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ width: 180, height: 52, borderBottom: '2px solid #999', marginBottom: 6 }}></div>
-                    <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Authorised Signatory</div>
-                    <div style={{ fontSize: 11, color: '#333', fontWeight: 700, marginTop: 2 }}>For JANU MOTORS</div>
-                </div>
-
-                {/* Totals box */}
-                <div style={{ width: 240, background: '#f9f9f9', border: '1px solid #e5e7eb', borderRadius: 8, padding: '14px 16px' }}>
-                    {row('Subtotal',              `₹${invoice.subtotal.toFixed(2)}`)}
-                    {row(`CGST (${CGST_RATE}%)`,  `₹${cgstAmt.toFixed(2)}`)}
-                    {row(`SGST (${SGST_RATE}%)`,  `₹${sgstAmt.toFixed(2)}`)}
-                    {row('Discount',              `-₹${(invoice.discount || 0).toFixed(2)}`)}
-                    {row('Total Due',             `₹${total.toFixed(2)}`, true, true, true)}
-                </div>
-            </div>
-
-            {/* ── Footer ── */}
-            <div style={{ marginTop: 28, paddingTop: 14, borderTop: '1px solid #e5e7eb', textAlign: 'center', fontSize: 10, color: '#999' }}>
-                Payment is due within 30 days of invoice date &nbsp;·&nbsp; Thank you for choosing Janu Motors!
-            </div>
-        </div>
-    );
-};
-
-// ─── Main component ─────────────────────────────────────────────────────────
+// ─── Main component ──────────────────────────────────────────────────────────
 const InvoiceDetail = () => {
     const { invoiceId } = useParams<{ invoiceId: string }>();
     const { state, dispatch } = useAppContext();
     const [isDownloading, setIsDownloading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
-    const originalInvoice = useMemo(() => state.invoices.find(inv => inv.id === invoiceId), [state.invoices, invoiceId]);
+    const originalInvoice = useMemo(
+        () => state.invoices.find(inv => inv.id === invoiceId),
+        [state.invoices, invoiceId]
+    );
     const [editedInvoice, setEditedInvoice] = useState<Invoice | null>(
         originalInvoice ? JSON.parse(JSON.stringify(originalInvoice)) : null
     );
 
     useEffect(() => {
         if (isEditing && editedInvoice) {
-            const subtotal = editedInvoice.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-            const taxAmount = subtotal * ((CGST_RATE + SGST_RATE) / 100);
-            const total = subtotal + taxAmount - (editedInvoice.discount || 0);
+            const subtotal = editedInvoice.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
+            const total    = subtotal * (1 + (CGST_RATE + SGST_RATE) / 100) - (editedInvoice.discount || 0);
             setEditedInvoice(prev => prev ? {
                 ...prev, subtotal, total, tax: CGST_RATE + SGST_RATE,
-                items: prev.items.map(item => ({ ...item, total: item.quantity * item.unit_price }))
+                items: prev.items.map(i => ({ ...i, total: i.quantity * i.unit_price }))
             } : null);
         }
     }, [isEditing, editedInvoice?.items, editedInvoice?.discount]);
@@ -190,10 +263,10 @@ const InvoiceDetail = () => {
 
     const customer = state.customers.find(c => c.id === invoice.customer_id);
     const jobCard  = state.jobCards.find(jc => jc.id === invoice.job_card_id);
-    const vehicle  = jobCard ? state.vehicles.find(v => v.id === jobCard.vehicle_id) : null;
+    const vehicle  = jobCard ? state.vehicles.find(v => v.id === jobCard.vehicle_id) : undefined;
 
-    const cgstAmt    = invoice.subtotal * (CGST_RATE / 100);
-    const sgstAmt    = invoice.subtotal * (SGST_RATE / 100);
+    const cgstAmt     = invoice.subtotal * (CGST_RATE / 100);
+    const sgstAmt     = invoice.subtotal * (SGST_RATE / 100);
     const displayTotal = invoice.subtotal + cgstAmt + sgstAmt - (invoice.discount || 0);
 
     const statusCls = (s: PaymentStatus) => ({
@@ -202,7 +275,7 @@ const InvoiceDetail = () => {
         [PaymentStatus.PARTIAL]: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
     }[s] ?? 'bg-white/10 text-white/60 border-white/30');
 
-    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) =>
+    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
         dispatch({ type: 'UPDATE_INVOICE', payload: { ...invoice, payment_status: e.target.value as PaymentStatus } });
 
     const handleSave = async () => {
@@ -216,33 +289,23 @@ const InvoiceDetail = () => {
         setEditedInvoice({ ...editedInvoice, items });
     };
 
-    // PDF is generated from the hidden white PrintInvoice element
-    const handleDownloadPdf = () => {
-        const el = document.getElementById('invoice-pdf');
-        if (!el) return;
+    const handleDownloadPdf = async () => {
         setIsDownloading(true);
-        html2canvas(el, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' })
-            .then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pw = pdf.internal.pageSize.getWidth();
-                const ph = pdf.internal.pageSize.getHeight();
-                const ratio = Math.min((pw - 10) / canvas.width, (ph - 10) / canvas.height);
-                const x = (pw - canvas.width * ratio) / 2;
-                pdf.addImage(imgData, 'PNG', x, 5, canvas.width * ratio, canvas.height * ratio);
-                pdf.save(`Invoice-${invoice.id}.pdf`);
-                setIsDownloading(false);
-            })
-            .catch(() => { setIsDownloading(false); alert('PDF generation failed.'); });
+        try {
+            const doc = await buildInvoicePDF(invoice, customer, vehicle);
+            doc.save(`Invoice-${invoice.id}.pdf`);
+        } catch (err) {
+            console.error(err);
+            alert('PDF generation failed.');
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     return (
         <div className="space-y-4 animate-fade-in">
 
-            {/* Hidden white invoice used only for PDF generation */}
-            <PrintInvoice invoice={invoice} customer={customer} vehicle={vehicle} />
-
-            {/* ── Toolbar ── */}
+            {/* Toolbar */}
             <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
                 <h2 className="text-xl font-bold text-white">Invoice Details</h2>
                 <div className="flex flex-wrap items-center gap-2">
@@ -258,22 +321,23 @@ const InvoiceDetail = () => {
                             <button onClick={() => setIsEditing(true)} className="btn-secondary px-3 py-2 rounded-xl flex items-center gap-2 text-sm">
                                 <PencilIcon className="h-4 w-4" /> Edit
                             </button>
-                            <button onClick={handleDownloadPdf} disabled={isDownloading} className="btn-secondary px-3 py-2 rounded-xl flex items-center gap-2 text-sm disabled:opacity-50">
+                            <button onClick={handleDownloadPdf} disabled={isDownloading}
+                                className="btn-luxury px-4 py-2 rounded-xl flex items-center gap-2 text-sm disabled:opacity-50">
                                 <ArrowDownTrayIcon className="h-4 w-4" />
                                 {isDownloading ? 'Generating…' : 'Download PDF'}
                             </button>
-                            <button onClick={() => window.print()} className="btn-luxury px-3 py-2 rounded-xl text-sm">Print</button>
                         </>
                     ) : (
                         <>
-                            <button onClick={() => { setIsEditing(false); setEditedInvoice(JSON.parse(JSON.stringify(originalInvoice))); }} className="btn-secondary px-4 py-2 rounded-xl text-sm">Cancel</button>
+                            <button onClick={() => { setIsEditing(false); setEditedInvoice(JSON.parse(JSON.stringify(originalInvoice))); }}
+                                className="btn-secondary px-4 py-2 rounded-xl text-sm">Cancel</button>
                             <button onClick={handleSave} className="btn-luxury px-4 py-2 rounded-xl text-sm">Save</button>
                         </>
                     )}
                 </div>
             </div>
 
-            {/* ── Dark app invoice card (screen view) ── */}
+            {/* Screen card */}
             <div className="card-luxury p-6 sm:p-8 text-sm">
 
                 {/* Header */}
@@ -282,7 +346,7 @@ const InvoiceDetail = () => {
                         <img src="/assets/logo.png" alt="JANU MOTORS" className="h-14 w-14 rounded-xl flex-shrink-0" />
                         <div>
                             <p className="text-xl font-extrabold text-white tracking-wide">JANU MOTORS</p>
-                            <p className="text-xs text-white/55 leading-snug">Opposite Sitara Gardens, Tilak Nagar, Kadapa</p>
+                            <p className="text-xs text-white/55">Opposite Sitara Gardens, Tilak Nagar, Kadapa</p>
                             <p className="text-xs text-white/55">Ph: +91 98765 43210</p>
                             <p className="text-xs text-white/40 font-mono">GSTIN: 37XXXXX0000X1XX</p>
                         </div>
@@ -291,18 +355,12 @@ const InvoiceDetail = () => {
                         <p className="text-3xl font-black text-primary-400 uppercase tracking-widest">Invoice</p>
                         <p className="text-white/50 font-mono text-xs mt-0.5">{invoice.id}</p>
                         <div className="flex justify-end gap-5 mt-2">
-                            <div>
-                                <p className="text-xs text-white/40 uppercase tracking-wider">Issued</p>
-                                <p className="text-white font-medium text-xs">{invoice.issue_date}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-white/40 uppercase tracking-wider">Due</p>
-                                <p className="text-white font-medium text-xs">{invoice.due_date}</p>
-                            </div>
+                            <div><p className="text-xs text-white/40 uppercase">Issued</p><p className="text-white text-xs font-medium">{invoice.issue_date}</p></div>
+                            <div><p className="text-xs text-white/40 uppercase">Due</p><p className="text-white text-xs font-medium">{invoice.due_date}</p></div>
                         </div>
-                        <div className={`mt-2 inline-flex px-3 py-1 rounded-full border text-xs font-semibold ${statusCls(invoice.payment_status)}`}>
+                        <span className={`mt-2 inline-flex px-3 py-1 rounded-full border text-xs font-semibold ${statusCls(invoice.payment_status)}`}>
                             {invoice.payment_status}
-                        </div>
+                        </span>
                     </div>
                 </div>
 
@@ -338,6 +396,7 @@ const InvoiceDetail = () => {
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-primary-500/20 text-xs font-bold text-primary-500 uppercase tracking-wider">
+                                <th className="pb-2 pr-3 text-left">#</th>
                                 <th className="pb-2 pr-3 text-left">Description</th>
                                 <th className="pb-2 px-3 text-center w-14">Qty</th>
                                 <th className="pb-2 px-3 text-right w-28">Unit Price</th>
@@ -348,20 +407,15 @@ const InvoiceDetail = () => {
                         <tbody className="divide-y divide-primary-500/10">
                             {invoice.items.map((item, i) => (
                                 <tr key={i} className="text-xs">
+                                    <td className="py-2 pr-3 text-white/40">{i + 1}</td>
                                     <td className="py-2 pr-3 text-white">
-                                        {isEditing
-                                            ? <input type="text" value={item.description} onChange={e => handleItemChange(i, 'description', e.target.value)} className="w-full p-1 rounded form-input text-xs" />
-                                            : item.description}
+                                        {isEditing ? <input type="text" value={item.description} onChange={e => handleItemChange(i, 'description', e.target.value)} className="w-full p-1 rounded form-input text-xs" /> : item.description}
                                     </td>
                                     <td className="py-2 px-3 text-center text-white/80">
-                                        {isEditing
-                                            ? <input type="number" value={item.quantity} onChange={e => handleItemChange(i, 'quantity', Number(e.target.value))} className="w-full p-1 rounded form-input text-xs text-center" />
-                                            : item.quantity}
+                                        {isEditing ? <input type="number" value={item.quantity} onChange={e => handleItemChange(i, 'quantity', Number(e.target.value))} className="w-full p-1 rounded form-input text-xs text-center" /> : item.quantity}
                                     </td>
                                     <td className="py-2 px-3 text-right text-white/80">
-                                        {isEditing
-                                            ? <input type="number" value={item.unit_price} onChange={e => handleItemChange(i, 'unit_price', Number(e.target.value))} className="w-full p-1 rounded form-input text-xs text-right" />
-                                            : `₹${item.unit_price.toFixed(2)}`}
+                                        {isEditing ? <input type="number" value={item.unit_price} onChange={e => handleItemChange(i, 'unit_price', Number(e.target.value))} className="w-full p-1 rounded form-input text-xs text-right" /> : `₹${item.unit_price.toFixed(2)}`}
                                     </td>
                                     <td className="py-2 pl-3 text-right font-semibold text-white">₹{item.total.toFixed(2)}</td>
                                     {isEditing && (
