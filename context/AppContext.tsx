@@ -287,25 +287,35 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     supabase.from('carwash_bookings').select('*'),
                 ]);
 
-                const errors = [e1, e2, e3, e4, e5, e6, e7, e8, e9].filter(Boolean);
-                if (errors.length > 0) {
-                    throw errors[0]; // Throw the first error encountered
+                // Log individual table errors but don't fail the whole load.
+                // A missing table (404) should not block other tables from loading.
+                const tableErrors = [e1, e2, e3, e4, e5, e6, e7, e8, e9].filter(Boolean);
+                if (tableErrors.length > 0) {
+                    console.warn('Some tables failed to load:', tableErrors.map((e: any) => e?.message));
                 }
 
+                // Dispatch whatever data loaded successfully — missing tables get empty arrays.
                 baseDispatch({
                     type: 'SET_INITIAL_DATA',
                     payload: {
-                        customers: customers || [],
-                        vehicles: vehicles || [],
-                        jobCards: jobCards || [],
-                        invoices: invoices || [],
-                        inventory: inventory || [],
-                        workers: workers || [],
-                        attendance: attendance || [],
-                        payrollRecords: payrollRecords || [],
-                        carwashBookings: carwashBookings || [],
+                        customers: e1 ? [] : (customers || []),
+                        vehicles: e2 ? [] : (vehicles || []),
+                        jobCards: e3 ? [] : (jobCards || []),
+                        invoices: e4 ? [] : (invoices || []),
+                        inventory: e5 ? [] : (inventory || []),
+                        workers: e6 ? [] : (workers || []),
+                        attendance: e7 ? [] : (attendance || []),
+                        payrollRecords: e8 ? [] : (payrollRecords || []),
+                        carwashBookings: e9 ? [] : (carwashBookings || []),
                     }
                 });
+
+                // Surface a warning if critical tables are missing
+                const criticalError = e1 || e2 || e3 || e4;
+                if (criticalError) {
+                    const errorMessage = handleDatabaseError(criticalError, 'loading initial data');
+                    baseDispatch({ type: 'SET_ERROR', payload: errorMessage });
+                }
 
             } catch (error: any) {
                 const errorMessage = handleDatabaseError(error, 'loading initial data');
