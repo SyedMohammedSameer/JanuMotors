@@ -1,6 +1,7 @@
 // src/config.ts
 
-// IMPORTANT: Replace these with your actual Supabase project URL and anon key.
-// You can find these in your Supabase project's API settings.
-export const supabaseUrl = 'https://cvonhnwoampvqhkiolby.supabase.co';
-export const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2b25obndvYW1wdnFoa2lvbGJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNDg5ODEsImV4cCI6MjA2OTkyNDk4MX0.VfNmmYfQ4qQNYn5B4bY1h_H92vU364XhsBrVtwApMxI';
+// Supabase credentials are loaded from environment variables.
+// For local dev, create a .env.local file (see .env.example).
+// For Netlify, set these in Site Settings > Environment Variables.
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
