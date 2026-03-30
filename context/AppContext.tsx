@@ -255,26 +255,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
 
     useEffect(() => {
-        if (!state.isConfigured) {
+        if (!state.isConfigured || !supabase) {
             baseDispatch({ type: 'SET_LOADING', payload: false });
             return;
         }
 
         const fetchInitialData = async () => {
-            if (!supabase) return;
-            
             try {
                 baseDispatch({ type: 'SET_LOADING', payload: true });
                 baseDispatch({ type: 'SET_ERROR', payload: null });
 
                 const [
-                    { data: customers, error: e1 }, 
-                    { data: vehicles, error: e2 }, 
-                    { data: jobCards, error: e3 }, 
+                    { data: customers, error: e1 },
+                    { data: vehicles, error: e2 },
+                    { data: jobCards, error: e3 },
                     { data: invoices, error: e4 },
-                    { data: inventory, error: e5 }, 
-                    { data: workers, error: e6 }, 
-                    { data: attendance, error: e7 }, 
+                    { data: inventory, error: e5 },
+                    { data: workers, error: e6 },
+                    { data: attendance, error: e7 },
                     { data: payrollRecords, error: e8 },
                     { data: carwashBookings, error: e9 }
                 ] = await Promise.all([
@@ -294,8 +292,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     throw errors[0]; // Throw the first error encountered
                 }
 
-                baseDispatch({ 
-                    type: 'SET_INITIAL_DATA', 
+                baseDispatch({
+                    type: 'SET_INITIAL_DATA',
                     payload: {
                         customers: customers || [],
                         vehicles: vehicles || [],
@@ -309,16 +307,35 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     }
                 });
 
-                // Auto-login for demo purposes
-                baseDispatch({ type: 'LOGIN' });
-
             } catch (error: any) {
                 const errorMessage = handleDatabaseError(error, 'loading initial data');
                 baseDispatch({ type: 'SET_ERROR', payload: errorMessage });
             }
         };
 
-        fetchInitialData();
+        // Check for existing session on mount
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                baseDispatch({ type: 'LOGIN' });
+                fetchInitialData();
+            } else {
+                baseDispatch({ type: 'SET_LOADING', payload: false });
+            }
+        });
+
+        // Listen for auth state changes (login, logout, token refresh)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                baseDispatch({ type: 'LOGIN' });
+                fetchInitialData();
+            } else if (event === 'SIGNED_OUT') {
+                baseDispatch({ type: 'LOGOUT' });
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, [state.isConfigured]);
 
     const dispatch = async (action: Action) => {
@@ -511,8 +528,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     baseDispatch(action);
                     break;
                 }
+                case 'LOGOUT': {
+                    await supabase.auth.signOut();
+                    baseDispatch(action);
+                    break;
+                }
                 default:
-                    baseDispatch(action as any); // Handle synchronous actions like LOGIN/LOGOUT
+                    baseDispatch(action as any);
             }
         } catch (error: any) {
             const errorMessage = handleDatabaseError(error, action.type);
