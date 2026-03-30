@@ -15,218 +15,352 @@ async function buildInvoicePDF(
     customer: Customer | undefined,
     vehicle: Vehicle | undefined
 ) {
-    const doc  = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const W    = doc.internal.pageSize.getWidth();   // 210
-    const M    = 14; // margin
-    const RX   = W - M; // right edge
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const rightEdge = pageWidth - margin;
+    const contentWidth = pageWidth - margin * 2;
+    const footerReserve = 22;
 
-    // colour helpers
-    const setFill   = (r: number, g: number, b: number) => doc.setFillColor(r, g, b);
-    const setDraw   = (r: number, g: number, b: number) => doc.setDrawColor(r, g, b);
-    const setColor  = (r: number, g: number, b: number) => doc.setTextColor(r, g, b);
-    const bold      = (size: number) => { doc.setFont('helvetica', 'bold');   doc.setFontSize(size); };
-    const normal    = (size: number) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(size); };
+    const setFill = (r: number, g: number, b: number) => doc.setFillColor(r, g, b);
+    const setDraw = (r: number, g: number, b: number) => doc.setDrawColor(r, g, b);
+    const setColor = (r: number, g: number, b: number) => doc.setTextColor(r, g, b);
+    const bold = (size: number) => { doc.setFont('helvetica', 'bold'); doc.setFontSize(size); };
+    const normal = (size: number) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(size); };
 
-    const GOLD   = [184, 134, 11]  as [number,number,number];
-    const BLACK  = [20,  20,  20]  as [number,number,number];
-    const DARK   = [50,  50,  50]  as [number,number,number];
-    const GREY   = [110, 110, 110] as [number,number,number];
-    const LGREY  = [230, 230, 230] as [number,number,number];
-    const WHITE  = [255, 255, 255] as [number,number,number];
-    const GREEN  = [22, 163, 74]   as [number,number,number];
-    const RED    = [220, 38, 38]   as [number,number,number];
-    const AMBER  = [217, 119, 6]   as [number,number,number];
+    const ACCENT = [181, 137, 67] as [number, number, number];
+    const CHARCOAL = [24, 31, 40] as [number, number, number];
+    const INK = [31, 41, 55] as [number, number, number];
+    const MUTED = [107, 114, 128] as [number, number, number];
+    const BORDER = [221, 226, 232] as [number, number, number];
+    const WHITE = [255, 255, 255] as [number, number, number];
+    const SUCCESS = [22, 163, 74] as [number, number, number];
+    const DANGER = [220, 38, 38] as [number, number, number];
+    const WARNING = [217, 119, 6] as [number, number, number];
 
-    const cgst  = invoice.subtotal * (CGST_RATE / 100);
-    const sgst  = invoice.subtotal * (SGST_RATE / 100);
+    const amountFormatter = new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+    const formatCurrency = (value: number) => `INR ${amountFormatter.format(value)}`;
+    const formatDiscount = (value: number) => value > 0 ? `-INR ${amountFormatter.format(value)}` : 'INR 0.00';
+    const formatDate = (value?: string) => {
+        if (!value) return 'Not set';
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime())
+            ? value
+            : parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+    const safeValue = (value?: string, fallback = 'Not provided') => value?.trim() || fallback;
+
+    const cgst = invoice.subtotal * (CGST_RATE / 100);
+    const sgst = invoice.subtotal * (SGST_RATE / 100);
     const total = invoice.subtotal + cgst + sgst - (invoice.discount || 0);
 
-    // ── Top colour bar ──────────────────────────────────────────────────────
-    setFill(20, 20, 20);
-    doc.rect(0, 0, W, 38, 'F');
+    let y = margin;
+    const ensureSpace = (requiredHeight: number, nextPageY = 22) => {
+        if (y + requiredHeight > pageHeight - footerReserve) {
+            doc.addPage();
+            y = nextPageY;
+        }
+    };
 
-    // Logo (load from public assets)
+    let logoData: string | null = null;
     try {
         const resp = await fetch('/assets/logo.png');
         const blob = await resp.blob();
-        const b64: string = await new Promise(res => {
+        logoData = await new Promise(resolve => {
             const fr = new FileReader();
-            fr.onload = () => res(fr.result as string);
+            fr.onload = () => resolve(fr.result as string);
             fr.readAsDataURL(blob);
         });
-        doc.addImage(b64, 'PNG', M, 7, 22, 22);
-    } catch { /* logo unavailable, skip */ }
+    } catch {
+        logoData = null;
+    }
 
-    // Company name
-    bold(16);
+    const drawCard = (x: number, top: number, width: number, title: string, primaryLines: string[], detailLines: string[]) => {
+        const primaryHeight = primaryLines.length * 5.2;
+        const detailHeight = detailLines.length * 4.6;
+        const height = Math.max(28, 14 + primaryHeight + detailHeight + 8);
+
+        setFill(...WHITE);
+        doc.roundedRect(x, top, width, height, 3, 3, 'F');
+        setDraw(...BORDER);
+        doc.roundedRect(x, top, width, height, 3, 3, 'S');
+
+        bold(8);
+        setColor(...ACCENT);
+        doc.text(title.toUpperCase(), x + 6, top + 8);
+
+        let lineY = top + 15;
+        bold(10.5);
+        setColor(...INK);
+        primaryLines.forEach(line => {
+            doc.text(line, x + 6, lineY);
+            lineY += 5.2;
+        });
+
+        normal(8.5);
+        setColor(...MUTED);
+        lineY += 1;
+        detailLines.forEach(line => {
+            doc.text(line, x + 6, lineY);
+            lineY += 4.6;
+        });
+
+        return height;
+    };
+
+    const headerHeight = 42;
+    setFill(...CHARCOAL);
+    doc.roundedRect(margin, y, contentWidth, headerHeight, 4, 4, 'F');
+    setFill(...ACCENT);
+    doc.roundedRect(margin, y, contentWidth, 3.5, 4, 4, 'F');
+
+    if (logoData) {
+        doc.addImage(logoData, 'PNG', margin + 6, y + 8, 16, 16);
+    }
+
+    bold(18);
     setColor(...WHITE);
-    doc.text('JANU MOTORS', M + 26, 16);
+    doc.text('JANU MOTORS', margin + 26, y + 13);
 
-    normal(8);
-    setColor(190, 190, 190);
-    doc.text('Opposite Sitara Gardens, Tilak Nagar, Kadapa', M + 26, 22);
-    doc.text('Ph: +91 98765 43210   |   GSTIN: 37XXXXX0000X1XX', M + 26, 27);
+    normal(8.5);
+    setColor(208, 214, 222);
+    doc.text('Opposite Sitara Gardens, Tilak Nagar, Kadapa', margin + 26, y + 20);
+    doc.text('Ph: +91 98765 43210', margin + 26, y + 25.5);
+    doc.text('GSTIN: 37XXXXX0000X1XX', margin + 26, y + 31);
 
-    // INVOICE title (top-right)
-    bold(28);
-    setColor(...GOLD);
-    doc.text('INVOICE', RX, 18, { align: 'right' });
+    const headerRightWidth = 58;
+    const headerRightX = rightEdge - headerRightWidth;
+    const headerRightInnerLeft = headerRightX + 4;
+    const headerRightInnerRight = rightEdge - 4;
 
-    normal(8);
-    setColor(190, 190, 190);
-    doc.text(invoice.id, RX, 25, { align: 'right' });
-    doc.text(`Issued: ${invoice.issue_date}   Due: ${invoice.due_date}`, RX, 31, { align: 'right' });
+    bold(22);
+    setColor(...ACCENT);
+    doc.text('INVOICE', headerRightInnerRight, y + 13, { align: 'right' });
 
-    // Status badge
     const statusColor =
-        invoice.payment_status === PaymentStatus.PAID    ? GREEN :
-        invoice.payment_status === PaymentStatus.UNPAID  ? RED   : AMBER;
+        invoice.payment_status === PaymentStatus.PAID ? SUCCESS :
+        invoice.payment_status === PaymentStatus.UNPAID ? DANGER : WARNING;
+    const statusLabel = invoice.payment_status.toUpperCase();
+    bold(7.5);
+    const badgeWidth = doc.getTextWidth(statusLabel) + 12;
     setFill(...statusColor);
-    const sLabel = invoice.payment_status.toUpperCase();
-    bold(7);
-    const sW = doc.getTextWidth(sLabel) + 6;
-    doc.roundedRect(RX - sW, 33, sW, 5, 1, 1, 'F');
+    doc.roundedRect(headerRightInnerRight - badgeWidth, y + 17, badgeWidth, 6.5, 3.25, 3.25, 'F');
     setColor(...WHITE);
-    doc.text(sLabel, RX - sW / 2, 36.5, { align: 'center' });
+    doc.text(statusLabel, headerRightInnerRight - badgeWidth / 2, y + 21.2, { align: 'center' });
 
-    let y = 46;
+    normal(7.2);
+    setColor(208, 214, 222);
+    doc.text('INVOICE NO', headerRightInnerLeft, y + 29.5);
 
-    // ── Bill To / Vehicle / Job Ref ─────────────────────────────────────────
-    const col1 = M;
-    const col2 = M + 62;
-    const col3 = M + 124;
+    const headerInvoiceLines = doc.splitTextToSize(invoice.id, headerRightWidth - 8);
+    bold(8.4);
+    setColor(...WHITE);
+    doc.text(headerInvoiceLines, headerRightInnerLeft, y + 34.5);
 
-    bold(7);
-    setColor(...GOLD);
-    doc.text('BILL TO',       col1, y);
-    doc.text('VEHICLE',       col2, y);
-    doc.text('JOB CARD REF',  col3, y);
+    y += headerHeight + 8;
 
-    y += 5;
+    const metaGap = 6;
+    const metaWidth = (contentWidth - metaGap) / 2;
+    const metaHeight = 20;
+    const metaItems: Array<[string, string]> = [
+        ['Job Card', invoice.job_card_id],
+        ['Issue Date', formatDate(invoice.issue_date)],
+    ];
 
-    bold(10);
-    setColor(...BLACK);
-    doc.text(customer?.name  || '—',                     col1, y);
-    doc.text(`${vehicle?.make || ''} ${vehicle?.model || ''}`.trim() || '—', col2, y);
+    metaItems.forEach(([label, value], index) => {
+        const x = margin + index * (metaWidth + metaGap);
+        setFill(...WHITE);
+        doc.roundedRect(x, y, metaWidth, metaHeight, 2.5, 2.5, 'F');
+        setDraw(...BORDER);
+        doc.roundedRect(x, y, metaWidth, metaHeight, 2.5, 2.5, 'S');
+        setFill(...ACCENT);
+        doc.rect(x, y, metaWidth, 1.4, 'F');
 
+        normal(7.5);
+        setColor(...MUTED);
+        doc.text(label.toUpperCase(), x + 4, y + 7);
+
+        bold(9);
+        setColor(...INK);
+        const valueLines = doc.splitTextToSize(value, metaWidth - 8).slice(0, 2);
+        doc.text(valueLines, x + 4, y + 13);
+    });
+
+    y += metaHeight + 8;
+
+    const cardGap = 6;
+    const leftCardWidth = contentWidth * 0.56;
+    const rightCardWidth = contentWidth - leftCardWidth - cardGap;
+    const customerPrimary = doc.splitTextToSize(safeValue(customer?.name, 'Walk-in Customer'), leftCardWidth - 12);
+    const customerDetails = [
+        ...doc.splitTextToSize(safeValue(customer?.phone, 'Phone not provided'), leftCardWidth - 12),
+        ...doc.splitTextToSize(safeValue(customer?.email, 'Email not provided'), leftCardWidth - 12),
+        ...doc.splitTextToSize(safeValue(customer?.address, 'Address not provided'), leftCardWidth - 12),
+    ];
+    const vehiclePrimary = doc.splitTextToSize(
+        vehicle ? `${vehicle.make} ${vehicle.model}`.trim() : 'Vehicle not linked',
+        rightCardWidth - 12
+    );
+    const vehicleDetails = [
+        ...doc.splitTextToSize(
+            vehicle?.license_plate ? `Registration: ${vehicle.license_plate}` : 'Registration: Not provided',
+            rightCardWidth - 12
+        ),
+        ...(vehicle?.year ? doc.splitTextToSize(`Model Year: ${vehicle.year}`, rightCardWidth - 12) : []),
+        ...doc.splitTextToSize(`Service Ref: ${invoice.job_card_id}`, rightCardWidth - 12),
+    ];
+
+    const billToHeight = drawCard(margin, y, leftCardWidth, 'Bill To', customerPrimary, customerDetails);
+    const vehicleCardHeight = drawCard(
+        margin + leftCardWidth + cardGap,
+        y,
+        rightCardWidth,
+        'Vehicle & Service',
+        vehiclePrimary,
+        vehicleDetails
+    );
+
+    y += Math.max(billToHeight, vehicleCardHeight) + 10;
+
+    bold(9);
+    setColor(...ACCENT);
+    doc.text('SERVICE BREAKDOWN', margin, y);
     normal(8);
-    setColor(...DARK);
-    doc.text(invoice.job_card_id, col3, y + 1);
+    setColor(...MUTED);
+    doc.text('Itemized labor and parts billed for this job', margin, y + 4.5);
+    y += 8;
 
-    y += 5;
-    normal(8);
-    setColor(...GREY);
-    if (customer?.phone)   doc.text(customer.phone,   col1, y);
-    if (vehicle?.license_plate) {
-        doc.text(`Reg No: `, col2, y);
-        bold(8); setColor(...DARK);
-        doc.text(vehicle.license_plate, col2 + doc.getTextWidth('Reg No: '), y);
-        normal(8); setColor(...GREY);
-    }
-    y += 4.5;
-    if (customer?.email)   doc.text(customer.email,   col1, y);
-    if (vehicle?.year)     doc.text(`Year: ${vehicle.year}`, col2, y);
-    y += 4.5;
-    if (customer?.address) {
-        const lines = doc.splitTextToSize(customer.address, 55);
-        doc.text(lines, col1, y);
-    }
-
-    y += 10;
-
-    // ── Items Table ─────────────────────────────────────────────────────────
     autoTable(doc, {
         startY: y,
-        margin: { left: M, right: M },
+        margin: { left: margin, right: margin, bottom: footerReserve },
         head: [['#', 'Description', 'Qty', 'Unit Price', 'Amount']],
         body: invoice.items.map((item, i) => [
             String(i + 1),
             item.description,
             String(item.quantity),
-            `₹${item.unit_price.toFixed(2)}`,
-            `₹${item.total.toFixed(2)}`,
+            formatCurrency(item.unit_price),
+            formatCurrency(item.total),
         ]),
+        theme: 'grid',
+        styles: {
+            font: 'helvetica',
+            fontSize: 8.6,
+            textColor: INK,
+            lineColor: BORDER,
+            lineWidth: 0.2,
+            cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+            overflow: 'linebreak',
+            valign: 'middle',
+        },
         headStyles: {
-            fillColor: [20, 20, 20],
-            textColor: [255, 255, 255],
+            fillColor: CHARCOAL,
+            textColor: WHITE,
             fontStyle: 'bold',
-            fontSize: 8,
+            fontSize: 8.2,
             halign: 'left',
-            cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
+            cellPadding: { top: 4.2, bottom: 4.2, left: 4, right: 4 },
         },
         bodyStyles: {
-            fontSize: 9,
-            textColor: [40, 40, 40],
-            cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+            textColor: INK,
         },
-        alternateRowStyles: { fillColor: [248, 248, 248] },
+        alternateRowStyles: {
+            fillColor: [250, 248, 244],
+        },
         columnStyles: {
-            0: { cellWidth: 8,  halign: 'center' },
+            0: { cellWidth: 10, halign: 'center' },
             1: { cellWidth: 'auto' },
-            2: { cellWidth: 14, halign: 'center' },
-            3: { cellWidth: 28, halign: 'right' },
-            4: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
+            2: { cellWidth: 16, halign: 'center' },
+            3: { cellWidth: 34, halign: 'right' },
+            4: { cellWidth: 34, halign: 'right', fontStyle: 'bold' },
         },
-        tableLineColor: [220, 220, 220],
-        tableLineWidth: 0.2,
-        theme: 'grid',
+        rowPageBreak: 'avoid',
     });
 
-    y = (doc as any).lastAutoTable.finalY + 8;
+    const tableState = doc as jsPDF & { lastAutoTable?: { finalY?: number } };
+    y = (tableState.lastAutoTable?.finalY || y) + 10;
 
-    // ── Totals box (right side) ─────────────────────────────────────────────
-    const boxW  = 70;
-    const boxX  = RX - boxW;
-    const lineH = 6.5;
+    const summaryWidth = 78;
+    const notesWidth = contentWidth - summaryWidth - 8;
+    const notesText = invoice.payment_status === PaymentStatus.PAID
+        ? 'Payment has been received for this service. We appreciate your trust in Janu Motors.'
+        : 'Payment is due within 30 days of the issue date. Please reference the invoice number when making payment.';
+    const noteLines = doc.splitTextToSize(
+        `${notesText}\nQuestions about this invoice? Contact Janu Motors at +91 98765 43210.`,
+        notesWidth - 12
+    );
+    const notesHeight = Math.max(36, 18 + noteLines.length * 4.5 + 12);
+    const summaryHeight = 48;
 
-    // box background
-    setFill(250, 250, 250);
-    setDraw(...LGREY);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(boxX, y, boxW, 44, 2, 2, 'FD');
+    ensureSpace(Math.max(notesHeight, summaryHeight) + 4);
 
-    const tRow = (label: string, value: string, isBold = false, topLine = false) => {
-        if (topLine) {
-            setDraw(...GOLD);
-            doc.setLineWidth(0.5);
-            doc.line(boxX + 3, y + 1, boxX + boxW - 3, y + 1);
-            y += 3;
-        }
-        if (isBold) { bold(10); setColor(...BLACK); }
-        else        { normal(8); setColor(...DARK); }
-        doc.text(label, boxX + 4, y + 4);
-        doc.text(value, boxX + boxW - 4, y + 4, { align: 'right' });
-        y += lineH;
+    setFill(...WHITE);
+    doc.roundedRect(margin, y, notesWidth, notesHeight, 3, 3, 'F');
+    setDraw(...BORDER);
+    doc.roundedRect(margin, y, notesWidth, notesHeight, 3, 3, 'S');
+
+    bold(8);
+    setColor(...ACCENT);
+    doc.text('PAYMENT & NOTES', margin + 6, y + 8);
+
+    normal(8.5);
+    setColor(...MUTED);
+    doc.text(noteLines, margin + 6, y + 14);
+
+    const signLineY = y + notesHeight - 11;
+    setDraw(184, 189, 194);
+    doc.setLineWidth(0.35);
+    doc.line(margin + 6, signLineY, margin + 56, signLineY);
+    normal(8);
+    setColor(...MUTED);
+    doc.text('Authorised Signatory', margin + 6, signLineY + 4.5);
+
+    const summaryX = margin + notesWidth + 8;
+    setFill(...WHITE);
+    doc.roundedRect(summaryX, y, summaryWidth, summaryHeight, 3, 3, 'F');
+    setDraw(...BORDER);
+    doc.roundedRect(summaryX, y, summaryWidth, summaryHeight, 3, 3, 'S');
+
+    bold(8);
+    setColor(...ACCENT);
+    doc.text('AMOUNT SUMMARY', summaryX + 5, y + 8);
+
+    const drawSummaryRow = (label: string, value: string, rowY: number) => {
+        normal(8);
+        setColor(...MUTED);
+        doc.text(label, summaryX + 5, rowY);
+        setColor(...INK);
+        doc.text(value, summaryX + summaryWidth - 5, rowY, { align: 'right' });
     };
 
-    tRow('Subtotal',           `₹${invoice.subtotal.toFixed(2)}`);
-    tRow(`CGST (${CGST_RATE}%)`, `₹${cgst.toFixed(2)}`);
-    tRow(`SGST (${SGST_RATE}%)`, `₹${sgst.toFixed(2)}`);
-    tRow('Discount',           `-₹${(invoice.discount || 0).toFixed(2)}`);
-    tRow('Total Due',          `₹${total.toFixed(2)}`, true, true);
+    drawSummaryRow('Subtotal', formatCurrency(invoice.subtotal), y + 15);
+    drawSummaryRow(`CGST (${CGST_RATE}%)`, formatCurrency(cgst), y + 21);
+    drawSummaryRow(`SGST (${SGST_RATE}%)`, formatCurrency(sgst), y + 27);
+    drawSummaryRow('Discount', formatDiscount(invoice.discount || 0), y + 33);
 
-    // ── Signature box (left side) ───────────────────────────────────────────
-    const sigY  = y - (lineH * 5) + 20;  // align with totals box middle
-    setDraw(180, 180, 180);
-    doc.setLineWidth(0.4);
-    doc.line(M, sigY + 16, M + 50, sigY + 16);
-    normal(8); setColor(...GREY);
-    doc.text('Authorised Signatory', M, sigY + 20);
-    bold(8);   setColor(...DARK);
-    doc.text('For JANU MOTORS',      M, sigY + 25);
+    setFill(...CHARCOAL);
+    doc.roundedRect(summaryX + 4, y + summaryHeight - 13, summaryWidth - 8, 9, 2, 2, 'F');
+    bold(10);
+    setColor(...WHITE);
+    doc.text('Total Due', summaryX + 8, y + summaryHeight - 7);
+    doc.text(formatCurrency(total), summaryX + summaryWidth - 8, y + summaryHeight - 7, { align: 'right' });
 
-    y += 12;
+    const totalPages = doc.getNumberOfPages();
+    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+        doc.setPage(pageNumber);
+        setDraw(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.line(margin, pageHeight - 15, rightEdge, pageHeight - 15);
 
-    // ── Footer line ─────────────────────────────────────────────────────────
-    setFill(20, 20, 20);
-    doc.rect(0, 282, W, 15, 'F');
-    normal(7.5);
-    setColor(190, 190, 190);
-    doc.text(
-        'Payment is due within 30 days of invoice date   ·   Thank you for choosing Janu Motors!',
-        W / 2, 291,
-        { align: 'center' }
-    );
+        normal(7.5);
+        setColor(...MUTED);
+        doc.text('Thank you for choosing Janu Motors', margin, pageHeight - 9.5);
+        doc.text('Opposite Sitara Gardens, Tilak Nagar, Kadapa', pageWidth / 2, pageHeight - 9.5, { align: 'center' });
+        doc.text(`Page ${pageNumber} of ${totalPages}`, rightEdge, pageHeight - 9.5, { align: 'right' });
+    }
 
     return doc;
 }
