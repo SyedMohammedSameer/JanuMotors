@@ -135,34 +135,34 @@ const Payroll = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gradient flex items-center">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
                         <BanknotesIcon className="h-8 w-8 mr-3 text-primary-500" />
                         Payroll Management
                     </h1>
                     <p className="text-white/60 mt-2">Manage employee salaries and wages</p>
                 </div>
                 
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     {/* Month/Year Selectors */}
-                    <div className="flex items-center space-x-2">
-                        <CalendarIcon className="w-5 h-5 text-primary-500/50" />
-                        <select 
-                            value={selectedMonth} 
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <CalendarIcon className="w-5 h-5 text-primary-500/50 flex-shrink-0" />
+                        <select
+                            value={selectedMonth}
                             onChange={e => setSelectedMonth(Number(e.target.value))}
-                            className="form-input px-3 py-2 min-w-[120px]"
+                            className="form-input px-2 sm:px-3 py-2 text-sm"
                         >
                             {months.map((month, index) => (
                                 <option key={index} value={index}>{month}</option>
                             ))}
                         </select>
-                        <select 
-                            value={selectedYear} 
+                        <select
+                            value={selectedYear}
                             onChange={e => setSelectedYear(Number(e.target.value))}
-                            className="form-input px-3 py-2"
+                            className="form-input px-2 sm:px-3 py-2 text-sm"
                         >
                             {years.map(year => (
                                 <option key={year} value={year}>{year}</option>
@@ -170,18 +170,18 @@ const Payroll = () => {
                         </select>
                     </div>
 
-                    <button 
+                    <button
                         onClick={() => handleOpenModal(null)}
-                        className="btn-luxury px-6 py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap"
+                        className="btn-luxury px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap text-sm sm:text-base"
                     >
-                        <PlusIcon className="h-5 w-5" />
+                        <PlusIcon className="h-4 sm:h-5 w-4 sm:w-5" />
                         <span>Add Payroll Entry</span>
                     </button>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 <div className="card-luxury p-6 border-l-4 border-primary-500">
                     <div className="flex items-center justify-between">
                         <div>
@@ -224,8 +224,8 @@ const Payroll = () => {
             </div>
 
             {/* Period Display */}
-            <div className="card-luxury p-6">
-                <div className="flex items-center justify-between">
+            <div className="card-luxury p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h3 className="text-xl font-bold text-white">
                             Payroll for {months[selectedMonth]} {selectedYear}
@@ -247,7 +247,7 @@ const Payroll = () => {
 
             {/* Payroll Records */}
             {filteredPayrollData.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                     {filteredPayrollData.map((payroll) => {
                         const worker = state.workers.find(w => w.id === payroll.worker_id);
                         

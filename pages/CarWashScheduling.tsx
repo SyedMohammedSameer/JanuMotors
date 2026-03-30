@@ -172,11 +172,11 @@ const CarWashScheduling = () => {
     const isPast = new Date(selectedDate) < new Date(new Date().toISOString().split('T')[0]);
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gradient flex items-center">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
                         <CarWashIcon className="h-8 w-8 mr-3 text-primary-500" />
                         Car Wash Scheduling
                     </h1>
@@ -209,7 +209,7 @@ const CarWashScheduling = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 <div className="card-luxury p-6 border-l-4 border-primary-500">
                     <div className="flex items-center justify-between">
                         <div>
@@ -252,10 +252,10 @@ const CarWashScheduling = () => {
             </div>
 
             {/* Date Display */}
-            <div className="card-luxury p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-2xl font-bold text-white">{formatDate(selectedDate)}</h3>
+            <div className="card-luxury p-4 sm:p-6">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        <h3 className="text-base sm:text-xl md:text-2xl font-bold text-white truncate">{formatDate(selectedDate)}</h3>
                         <p className="text-white/60 mt-1">
                             {isToday ? 'Today' : isPast ? 'Past Date' : 'Future Date'} • 
                             {bookingStats.todaysBookings} booking{bookingStats.todaysBookings !== 1 ? 's' : ''} scheduled
@@ -278,7 +278,7 @@ const CarWashScheduling = () => {
                     <p className="text-white/60">Click on empty slots to create new bookings</p>
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1 p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 p-3 sm:p-6">
                     {timeSlots.map(timeSlot => {
                         const booking = getBookingForSlot(timeSlot);
                         const customer = booking ? state.customers.find(c => c.id === booking.customer_id) : null;

@@ -192,11 +192,11 @@ const Workers = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gradient flex items-center">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
                         <UserGroupIcon className="h-8 w-8 mr-3 text-primary-500" />
                         Worker Management
                     </h1>
@@ -213,7 +213,7 @@ const Workers = () => {
             </div>
 
             {/* Workers Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {state.workers.map(worker => {
                     const RoleIcon = getRoleIcon(worker.role);
                     const roleColor = getRoleColor(worker.role);
@@ -334,63 +334,63 @@ const Workers = () => {
 
             {/* Today's Attendance Table */}
             <div className="card-luxury overflow-hidden">
-                <div className="p-6 border-b border-primary-500/10">
-                    <h3 className="text-xl font-bold text-white">Today's Attendance Summary</h3>
-                    <p className="text-white/60">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <div className="p-4 sm:p-6 border-b border-primary-500/10">
+                    <h3 className="text-lg sm:text-xl font-bold text-white">Today's Attendance</h3>
+                    <p className="text-white/60 text-sm">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
-                
+
                 <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[480px]">
                         <thead className="bg-dark-50/50">
-                            <tr className="text-left text-sm font-semibold text-primary-500 uppercase tracking-wider">
-                                <th className="px-6 py-4">Worker</th>
-                                <th className="px-6 py-4">Clock In</th>
-                                <th className="px-6 py-4">Clock Out</th>
-                                <th className="px-6 py-4">Hours</th>
-                                <th className="px-6 py-4">Daily Pay</th>
+                            <tr className="text-left text-xs sm:text-sm font-semibold text-primary-500 uppercase tracking-wider">
+                                <th className="px-3 sm:px-6 py-3 sm:py-4">Worker</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4">Clock In</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4">Clock Out</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4">Hours</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4">Daily Pay</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-primary-500/10">
                             {todaysAttendance.length > 0 ? todaysAttendance.map(record => {
                                 const worker = state.workers.find(w => w.id === record.worker_id);
                                 if (!worker) return null;
-                                
+
                                 const clockInTime = new Date(record.clock_in);
                                 const clockOutTime = record.clock_out ? new Date(record.clock_out) : null;
                                 const hours = clockOutTime ? ((clockOutTime.getTime() - clockInTime.getTime()) / 3600000) : 0;
 
                                 return (
                                     <tr key={record.id} className="hover:bg-primary-500/5 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-sm">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
+                                            <div className="flex items-center space-x-2 sm:space-x-3">
+                                                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-xs sm:text-sm flex-shrink-0">
                                                     {worker.name.charAt(0)}
                                                 </div>
-                                                <div>
-                                                    <div className="font-medium text-white">{worker.name}</div>
+                                                <div className="min-w-0">
+                                                    <div className="font-medium text-white text-sm truncate">{worker.name}</div>
                                                     <div className="text-xs text-primary-500/80">{worker.role}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-white">{clockInTime.toLocaleTimeString()}</td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-white text-sm">{clockInTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
                                             {clockOutTime ? (
-                                                <span className="text-white">{clockOutTime.toLocaleTimeString()}</span>
+                                                <span className="text-white text-sm">{clockOutTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                             ) : (
-                                                <span className="flex items-center space-x-2 text-green-400 font-semibold">
-                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                <span className="flex items-center space-x-1 sm:space-x-2 text-green-400 font-semibold text-sm">
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></div>
                                                     <span>Active</span>
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-white">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-white text-sm">
                                             {hours > 0 ? `${hours.toFixed(1)}h` : '-'}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
                                             {clockOutTime ? (
                                                 <DailyPayInput record={record} initialPay={record.daily_pay} />
                                             ) : (
-                                                <span className="text-white/40 italic">Pending</span>
+                                                <span className="text-white/40 italic text-sm">Pending</span>
                                             )}
                                         </td>
                                     </tr>

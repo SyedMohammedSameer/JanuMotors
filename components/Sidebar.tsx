@@ -110,7 +110,7 @@ const Sidebar = () => {
         fixed lg:static inset-y-0 left-0 z-40 
         transform transition-all duration-300 ease-in-out
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        ${isCollapsed ? 'lg:w-20' : 'w-80 lg:w-72 xl:w-80'}
+        ${isCollapsed ? 'lg:w-20' : 'w-72 sm:w-80 lg:w-72 xl:w-80'}
       `}>
         <div className="h-full flex flex-col nav-glass border-r border-primary-500/10 overflow-hidden">
           {/* Header */}

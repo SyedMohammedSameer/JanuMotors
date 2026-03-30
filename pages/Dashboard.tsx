@@ -136,19 +136,19 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
             {/* Welcome Header */}
-            <div className="relative overflow-hidden rounded-2xl glass-gold border border-primary-500/30 p-8">
+            <div className="relative overflow-hidden rounded-xl sm:rounded-2xl glass-gold border border-primary-500/30 p-4 sm:p-6 md:p-8">
                 <div className="relative z-10">
-                    <h1 className="text-3xl font-bold text-gradient mb-2">Welcome back, Admin</h1>
-                    <p className="text-white/80 text-lg">Here's what's happening at your garage today</p>
+                    <h1 className="text-xl sm:text-3xl font-bold text-gradient mb-2">Welcome back, Admin</h1>
+                    <p className="text-white/80 text-sm sm:text-lg">Here's what's happening at your garage today</p>
                 </div>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-500/20 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-accent/20 to-transparent rounded-full translate-y-16 -translate-x-16"></div>
             </div>
 
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 <Card 
                     title="Total Customers" 
                     value={dashboardData.totalCustomers} 
@@ -181,9 +181,9 @@ const Dashboard = () => {
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6 xl:gap-8">
                 {/* Revenue Trend */}
-                <div className="xl:col-span-2 card-luxury p-6">
+                <div className="xl:col-span-2 card-luxury p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-xl font-bold text-white">Revenue Trend</h3>
                         <div className="flex items-center space-x-2 text-green-400">
@@ -233,9 +233,9 @@ const Dashboard = () => {
                 </div>
 
                 {/* Job Status Pie Chart */}
-                <div className="card-luxury p-6">
-                    <h3 className="text-xl font-bold text-white mb-6">Job Status Overview</h3>
-                    <ResponsiveContainer width="100%" height={320}>
+                <div className="card-luxury p-4 sm:p-6">
+                    <h3 className="text-xl font-bold text-white mb-4 sm:mb-6">Job Status Overview</h3>
+                    <ResponsiveContainer width="100%" height={240} className="sm:!h-[320px]">
                         <PieChart>
                             <Pie
                                 data={dashboardData.jobStatusData}
@@ -258,9 +258,9 @@ const Dashboard = () => {
             </div>
 
             {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
                 {/* Financial Summary */}
-                <div className="card-luxury p-6">
+                <div className="card-luxury p-4 sm:p-6">
                     <h3 className="text-xl font-bold text-white mb-6">Financial Summary</h3>
                     <ResponsiveContainer width="100%" height={280}>
                         <BarChart data={dashboardData.financialSummaryData} barCategoryGap="20%">
@@ -286,8 +286,8 @@ const Dashboard = () => {
                 </div>
 
                 {/* Recent Activity */}
-                <div className="card-luxury p-6">
-                    <h3 className="text-xl font-bold text-white mb-6">Recent Activity</h3>
+                <div className="card-luxury p-4 sm:p-6">
+                    <h3 className="text-xl font-bold text-white mb-4 sm:mb-6">Recent Activity</h3>
                     <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar">
                         {dashboardData.recentActivity.length > 0 ? dashboardData.recentActivity.map(activity => (
                             <div key={`${activity.type}-${activity.id}`} className="flex items-start space-x-4 p-3 rounded-xl bg-dark-50/30 border border-primary-500/10 hover:border-primary-500/30 transition-all duration-300">

@@ -80,10 +80,10 @@ const Settings = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-gradient flex items-center">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
                     <Cog6ToothIcon className="h-8 w-8 mr-3 text-primary-500" />
                     System Settings
                 </h1>
@@ -91,7 +91,7 @@ const Settings = () => {
             </div>
 
             {/* Settings Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 xl:gap-8">
                 {/* Business Information */}
                 <div className="card-luxury p-6">
                     <div className="flex items-center space-x-3 mb-6">

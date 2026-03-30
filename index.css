@@ -186,12 +186,28 @@ textarea:focus {
 @media (max-width: 768px) {
   .card-luxury {
     border-radius: 12px;
-    margin: 0.5rem;
   }
-  
+
   .btn-luxury {
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     font-size: 0.875rem;
+    min-height: 44px;
+  }
+
+  .btn-secondary {
+    min-height: 44px;
+  }
+
+  .form-input {
+    min-height: 44px;
+    font-size: 1rem; /* prevent iOS zoom on focus */
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .card-luxury {
+    border-radius: 10px;
   }
 }
 
@@ -274,12 +290,27 @@ textarea:focus {
 /* Responsive Grid */
 .grid-responsive {
   display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .grid-responsive {
+    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .grid-responsive {
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
 }
 
 @media (min-width: 1024px) {
   .grid-responsive {
+    gap: 1.5rem;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   }
 }
