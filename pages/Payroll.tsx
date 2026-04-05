@@ -186,7 +186,7 @@ const Payroll = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-white/70">Total Payroll</p>
-                            <p className="text-2xl font-bold text-primary-400">${payrollStats.totalPayroll.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-primary-400">₹{payrollStats.totalPayroll.toLocaleString()}</p>
                         </div>
                         <CurrencyIcon className="h-8 w-8 text-primary-500" />
                     </div>
@@ -206,7 +206,7 @@ const Payroll = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-white/70">Average Pay</p>
-                            <p className="text-2xl font-bold text-green-400">${payrollStats.averagePayroll.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-green-400">₹{payrollStats.averagePayroll.toLocaleString()}</p>
                         </div>
                         <ChartBarIcon className="h-8 w-8 text-green-500" />
                     </div>
@@ -216,7 +216,7 @@ const Payroll = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-white/70">Highest Pay</p>
-                            <p className="text-2xl font-bold text-yellow-400">${payrollStats.highestPay.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-yellow-400">₹{payrollStats.highestPay.toLocaleString()}</p>
                         </div>
                         <div className="text-2xl">⭐</div>
                     </div>
@@ -232,7 +232,7 @@ const Payroll = () => {
                         </h3>
                         <p className="text-white/60 mt-1">
                             {payrollStats.totalEmployees} employee{payrollStats.totalEmployees !== 1 ? 's' : ''} • 
-                            Total: ${payrollStats.totalPayroll.toLocaleString()}
+                            Total: ₹{payrollStats.totalPayroll.toLocaleString()}
                         </p>
                     </div>
                     
@@ -288,7 +288,7 @@ const Payroll = () => {
                                 {/* Salary Amount */}
                                 <div className="text-center mb-4 p-4 rounded-lg bg-gradient-to-r from-primary-500/10 to-green-500/10 border border-primary-500/20">
                                     <p className="text-sm text-white/70 mb-1">Monthly Salary</p>
-                                    <p className="text-3xl font-bold text-gradient">${payroll.amount.toLocaleString()}</p>
+                                    <p className="text-3xl font-bold text-gradient">₹{payroll.amount.toLocaleString()}</p>
                                 </div>
 
                                 {/* Notes */}
@@ -355,7 +355,7 @@ const Payroll = () => {
                         </div>
                         
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Salary Amount ($) *</label>
+                            <label className="block text-sm font-medium text-white/80 mb-2">Salary Amount (₹) *</label>
                             <input 
                                 type="number" 
                                 name="amount" 

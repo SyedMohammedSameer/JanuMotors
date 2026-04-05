@@ -1,9 +1,24 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, Area, AreaChart } from 'recharts';
 import { useAppContext } from '../context/AppContext';
+import Modal from '../components/Modal';
 import Card from '../components/Card';
-import { UsersIcon, WrenchScrewdriverIcon, DocumentTextIcon, CircleStackIcon, CurrencyDollarIcon } from '../components/Icons';
+import { UsersIcon, WrenchScrewdriverIcon, DocumentTextIcon, CircleStackIcon, CurrencyDollarIcon, ArrowDownTrayIcon } from '../components/Icons';
 import { JobStatus, PaymentStatus } from '../types';
+import {
+    exportAllData,
+    prepareCustomersExport,
+    prepareVehiclesExport,
+    prepareJobCardsExport,
+    prepareInvoicesExport,
+    prepareInventoryExport,
+    prepareServiceHistoryExport,
+    prepareTransactionsExport,
+    exportToCSV,
+    exportToXLSX,
+    getDateRange,
+    filterByDateRange,
+} from '../utils/exportData';
 
 // Trend Arrow Icon
 const TrendUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -14,6 +29,10 @@ const TrendUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const Dashboard = () => {
     const { state, formatCurrency } = useAppContext();
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv');
+    const [exportPeriod, setExportPeriod] = useState<'all' | 'weekly' | 'monthly'>('all');
+    const [isExporting, setIsExporting] = useState(false);
     
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
@@ -135,13 +154,74 @@ const Dashboard = () => {
         return null;
     };
 
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            const timestamp = new Date().toISOString().split('T')[0];
+            
+            if (exportPeriod === 'all') {
+                // Export all data
+                await exportAllData(
+                    state.customers,
+                    state.vehicles,
+                    state.jobCards,
+                    state.invoices,
+                    state.inventory,
+                    state.workers,
+                    exportFormat
+                );
+            } else {
+                // Export specific period
+                const { startDate, endDate } = getDateRange(exportPeriod as 'weekly' | 'monthly');
+                
+                const data = [
+                    { name: 'Customers', data: prepareCustomersExport(state.customers, state.vehicles, state.invoices), filename: `customers_${exportPeriod}_${timestamp}` },
+                    { name: 'Invoices', data: filterByDateRange(prepareInvoicesExport(state.invoices, state.customers, state.jobCards), 'Issue Date', startDate, endDate), filename: `invoices_${exportPeriod}_${timestamp}` },
+                    { name: 'Job Cards', data: filterByDateRange(prepareJobCardsExport(state.jobCards, state.customers, state.vehicles, state.workers), 'Created Date', startDate, endDate), filename: `job_cards_${exportPeriod}_${timestamp}` },
+                    { name: 'Service History', data: filterByDateRange(prepareServiceHistoryExport(state.customers), 'Service Date', startDate, endDate), filename: `service_history_${exportPeriod}_${timestamp}` },
+                    { name: 'Transactions', data: filterByDateRange(prepareTransactionsExport(state.invoices, state.customers), 'Date', startDate, endDate), filename: `transactions_${exportPeriod}_${timestamp}` },
+                    { name: 'Inventory', data: prepareInventoryExport(state.inventory), filename: `inventory_${exportPeriod}_${timestamp}` },
+                ];
+                
+                for (const exp of data) {
+                    if (exp.data.length > 0) {
+                        if (exportFormat === 'xlsx') {
+                            await exportToXLSX(exp.data, exp.filename);
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                        } else {
+                            exportToCSV(exp.data, exp.filename);
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        }
+                    }
+                }
+            }
+            
+            alert('Data exported successfully!');
+            setIsExportModalOpen(false);
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Export failed. Please try again.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
         <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
             {/* Welcome Header */}
             <div className="relative overflow-hidden rounded-xl sm:rounded-2xl glass-gold border border-primary-500/30 p-4 sm:p-6 md:p-8">
-                <div className="relative z-10">
-                    <h1 className="text-xl sm:text-3xl font-bold text-gradient mb-2">Welcome back, Admin</h1>
-                    <p className="text-white/80 text-sm sm:text-lg">Here's what's happening at your garage today</p>
+                <div className="flex justify-between items-start">
+                    <div className="relative z-10 flex-1">
+                        <h1 className="text-xl sm:text-3xl font-bold text-gradient mb-2">Welcome back, Admin</h1>
+                        <p className="text-white/80 text-sm sm:text-lg">Here's what's happening at your garage today</p>
+                    </div>
+                    <button 
+                        onClick={() => setIsExportModalOpen(true)}
+                        className="btn-luxury px-4 py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap text-sm"
+                    >
+                        <ArrowDownTrayIcon className="h-4 w-4" />
+                        <span>Export Data</span>
+                    </button>
                 </div>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-500/20 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-accent/20 to-transparent rounded-full translate-y-16 -translate-x-16"></div>
@@ -312,6 +392,102 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            <Modal title="Export Garage Data" isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)}>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-white/80 mb-3">Export Format</label>
+                        <div className="flex gap-4">
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name="format" 
+                                    value="csv" 
+                                    checked={exportFormat === 'csv'}
+                                    onChange={(e) => setExportFormat(e.target.value as 'csv' | 'xlsx')}
+                                    className="rounded"
+                                />
+                                <span className="text-white">CSV (Excel Compatible)</span>
+                            </label>
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name="format" 
+                                    value="xlsx" 
+                                    checked={exportFormat === 'xlsx'}
+                                    onChange={(e) => setExportFormat(e.target.value as 'csv' | 'xlsx')}
+                                    className="rounded"
+                                />
+                                <span className="text-white">XLSX (Excel Format)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-white/80 mb-3">Time Period</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name="period" 
+                                    value="all" 
+                                    checked={exportPeriod === 'all'}
+                                    onChange={(e) => setExportPeriod(e.target.value as 'all' | 'weekly' | 'monthly')}
+                                    className="rounded"
+                                />
+                                <span className="text-white">All Data</span>
+                            </label>
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name="period" 
+                                    value="weekly" 
+                                    checked={exportPeriod === 'weekly'}
+                                    onChange={(e) => setExportPeriod(e.target.value as 'all' | 'weekly' | 'monthly')}
+                                    className="rounded"
+                                />
+                                <span className="text-white">Last 7 Days</span>
+                            </label>
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name="period" 
+                                    value="monthly" 
+                                    checked={exportPeriod === 'monthly'}
+                                    onChange={(e) => setExportPeriod(e.target.value as 'all' | 'weekly' | 'monthly')}
+                                    className="rounded"
+                                />
+                                <span className="text-white">Last 30 Days</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
+                        <p className="text-sm text-white/80">
+                            📊 <strong>What will be exported:</strong> Customers, vehicles, job cards, invoices, inventory, service history, and transaction reports.
+                        </p>
+                    </div>
+
+                    <div className="flex justify-end space-x-4 pt-6">
+                        <button 
+                            type="button" 
+                            onClick={() => setIsExportModalOpen(false)} 
+                            className="btn-secondary px-6 py-3 rounded-xl"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={handleExport}
+                            disabled={isExporting}
+                            className="btn-luxury px-6 py-3 rounded-xl flex items-center space-x-2 disabled:opacity-50"
+                        >
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                            <span>{isExporting ? 'Exporting...' : 'Export Data'}</span>
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             <style jsx>{`
                 .custom-scrollbar::-webkit-scrollbar {

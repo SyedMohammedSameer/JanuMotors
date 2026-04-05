@@ -436,6 +436,25 @@ const InvoiceDetail = () => {
         }
     };
 
+    const handlePrint = async () => {
+        setIsDownloading(true);
+        try {
+            const doc = await buildInvoicePDF(invoice, customer, vehicle);
+            const blobUrl = doc.output('bloburi');
+            const printWindow = window.open(blobUrl.toString());
+            if (printWindow) {
+                setTimeout(() => {
+                    printWindow.print();
+                }, 250);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Print preparation failed.');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
         <div className="space-y-4 animate-fade-in">
 
@@ -459,6 +478,14 @@ const InvoiceDetail = () => {
                                 className="btn-luxury px-4 py-2 rounded-xl flex items-center gap-2 text-sm disabled:opacity-50">
                                 <ArrowDownTrayIcon className="h-4 w-4" />
                                 {isDownloading ? 'Generating…' : 'Download PDF'}
+                            </button>
+                            <button onClick={handlePrint} disabled={isDownloading}
+                                className="btn-luxury px-4 py-2 rounded-xl flex items-center gap-2 text-sm disabled:opacity-50"
+                                title="Print invoice">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.745h10.56m0 0v3.75m0-3.75v-1.972M6.72 13.745h-.75a2.25 2.25 0 0 0-2.25 2.25v6a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25v-6a2.25 2.25 0 0 0-2.25-2.25h-.75m0 0V6a2.25 2.25 0 0 0-2.25-2.25H9.75a2.25 2.25 0 0 0-2.25 2.25v6.745m0 0H3.75A2.25 2.25 0 0 0 1.5 22.25v-6a2.25 2.25 0 0 1 2.25-2.25h.75m0 0h6m-9 6h6" />
+                                </svg>
+                                {isDownloading ? 'Preparing…' : 'Print'}
                             </button>
                         </>
                     ) : (

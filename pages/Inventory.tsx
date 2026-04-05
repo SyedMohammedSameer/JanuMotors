@@ -185,9 +185,9 @@ const Inventory = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-white/70">Total Value</p>
-                            <p className="text-2xl font-bold text-primary-400">${inventoryStats.totalValue.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-primary-400">₹{inventoryStats.totalValue.toLocaleString()}</p>
                         </div>
-                        <div className="text-primary-500 text-3xl font-bold">$</div>
+                        <div className="text-primary-500 text-3xl font-bold">₹</div>
                     </div>
                 </div>
             </div>
@@ -280,11 +280,11 @@ const Inventory = () => {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-white/70">Unit Price</span>
-                                    <span className="font-bold text-primary-400">${item.price.toFixed(2)}</span>
+                                    <span className="font-bold text-primary-400">₹{item.price.toFixed(2)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-white/70">Total Value</span>
-                                    <span className="font-bold text-primary-400">${(item.quantity * item.price).toFixed(2)}</span>
+                                    <span className="font-bold text-primary-400">₹{(item.quantity * item.price).toFixed(2)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-white/70">Low Stock Alert</span>
@@ -392,7 +392,7 @@ const Inventory = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Unit Price ($) *</label>
+                            <label className="block text-sm font-medium text-white/80 mb-2">Unit Price (₹) *</label>
                             <input 
                                 type="number" 
                                 name="price" 

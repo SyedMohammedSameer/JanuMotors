@@ -78,7 +78,7 @@ const Customers = () => {
         const customerToAdd: Customer = {
             ...newCustomer,
             id: `C${Date.now()}`,
-            coupon_id: newCustomer.coupon_id || undefined,
+            coupon_id: newCustomer.coupon_id || null,
             communication_log: [],
             service_history: [],
             created_at: new Date().toISOString()

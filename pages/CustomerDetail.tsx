@@ -3,7 +3,7 @@ import { useParams, Navigate, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import Modal from '../components/Modal';
 import { Vehicle, CommunicationLog, ServiceHistory } from '../types';
-import { PlusIcon, UsersIcon, TruckIcon, ChatBubbleLeftRightIcon, CurrencyDollarIcon, WrenchScrewdriverIcon } from '../components/Icons';
+import { PlusIcon, UsersIcon, TruckIcon, ChatBubbleLeftRightIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, PencilIcon } from '../components/Icons';
 
 // Email Icon
 const EmailIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -48,6 +48,9 @@ const CustomerDetail = () => {
     const [isVehicleModalOpen, setVehicleModalOpen] = useState(false);
     const [isCommLogModalOpen, setCommLogModalOpen] = useState(false);
     const [isServiceHistoryModalOpen, setServiceHistoryModalOpen] = useState(false);
+    const [isEditCustomerOpen, setEditCustomerOpen] = useState(false);
+    const [isEditVehicleOpen, setEditVehicleOpen] = useState(false);
+    const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
 
     const initialVehicleState = { make: '', model: '', year: new Date().getFullYear(), vin: '', license_plate: '' };
     const [newVehicle, setNewVehicle] = useState(initialVehicleState);
@@ -57,6 +60,9 @@ const CustomerDetail = () => {
     
     const initialServiceHistoryState = { description: '', cost: 0 };
     const [newServiceHistory, setNewServiceHistory] = useState(initialServiceHistoryState);
+
+    const [editCustomerData, setEditCustomerData] = useState<Partial<Customer> | null>(null);
+    const [editVehicleData, setEditVehicleData] = useState<Partial<Vehicle> | null>(null);
 
     const customer = state.customers.find(c => c.id === customerId);
     const vehicles = state.vehicles.filter(v => v.owner_id === customerId);
@@ -82,6 +88,51 @@ const CustomerDetail = () => {
         await dispatch({ type: 'ADD_VEHICLE', payload: vehicleToAdd });
         setVehicleModalOpen(false);
         setNewVehicle(initialVehicleState);
+    };
+
+    const handleEditVehicle = (vehicle: Vehicle) => {
+        setEditVehicleData({ ...vehicle });
+        setEditingVehicleId(vehicle.id);
+        setEditVehicleOpen(true);
+    };
+
+    const handleSaveEditVehicle = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editVehicleData || !editingVehicleId) return;
+        const updatedVehicle: Vehicle = {
+            id: editingVehicleId,
+            owner_id: editVehicleData.owner_id!,
+            make: editVehicleData.make!,
+            model: editVehicleData.model!,
+            year: Number(editVehicleData.year),
+            vin: editVehicleData.vin!,
+            license_plate: editVehicleData.license_plate!,
+        };
+        await dispatch({ type: 'UPDATE_VEHICLE', payload: updatedVehicle });
+        setEditVehicleOpen(false);
+        setEditVehicleData(null);
+        setEditingVehicleId(null);
+    };
+
+    const handleEditCustomer = () => {
+        setEditCustomerData({ ...customer });
+        setEditCustomerOpen(true);
+    };
+
+    const handleSaveEditCustomer = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editCustomerData) return;
+        const updatedCustomer: Customer = {
+            ...customer,
+            name: editCustomerData.name || customer.name,
+            phone: editCustomerData.phone || customer.phone,
+            email: editCustomerData.email || customer.email,
+            address: editCustomerData.address || customer.address,
+            coupon_id: editCustomerData.coupon_id || null,
+        };
+        await dispatch({ type: 'UPDATE_CUSTOMER', payload: updatedCustomer });
+        setEditCustomerOpen(false);
+        setEditCustomerData(null);
     };
     
     const handleAddCommLog = async (e: React.FormEvent) => {
@@ -139,7 +190,7 @@ const CustomerDetail = () => {
 
     return (
         <div className="space-y-8 animate-fade-in">
-            {/* Customer Header */}
+                {/* Customer Header */}
             <div className="card-luxury p-8">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
                     <div className="flex items-center space-x-6">
@@ -179,20 +230,29 @@ const CustomerDetail = () => {
                         </div>
                     </div>
 
-                    {/* Customer Stats */}
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="text-center p-4 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                            <p className="text-2xl font-bold text-primary-400">{vehicles.length}</p>
-                            <p className="text-sm text-white/60">Vehicle{vehicles.length !== 1 ? 's' : ''}</p>
+                    {/* Customer Stats & Edit Button */}
+                    <div className="flex flex-col space-y-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="text-center p-4 rounded-lg bg-dark-50/30 border border-primary-500/10">
+                                <p className="text-2xl font-bold text-primary-400">{vehicles.length}</p>
+                                <p className="text-sm text-white/60">Vehicle{vehicles.length !== 1 ? 's' : ''}</p>
+                            </div>
+                            <div className="text-center p-4 rounded-lg bg-dark-50/30 border border-primary-500/10">
+                                <p className="text-2xl font-bold text-green-400">₹{totalServiceValue.toLocaleString()}</p>
+                                <p className="text-sm text-white/60">Total Spent</p>
+                            </div>
+                            <div className="text-center p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 col-span-2 lg:col-span-1">
+                                <p className="text-2xl font-bold text-blue-400">{customer.service_history.length}</p>
+                                <p className="text-sm text-white/60">Service{customer.service_history.length !== 1 ? 's' : ''}</p>
+                            </div>
                         </div>
-                        <div className="text-center p-4 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                            <p className="text-2xl font-bold text-green-400">${totalServiceValue.toLocaleString()}</p>
-                            <p className="text-sm text-white/60">Total Spent</p>
-                        </div>
-                        <div className="text-center p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 col-span-2 lg:col-span-1">
-                            <p className="text-2xl font-bold text-blue-400">{customer.service_history.length}</p>
-                            <p className="text-sm text-white/60">Service{customer.service_history.length !== 1 ? 's' : ''}</p>
-                        </div>
+                        <button 
+                            onClick={handleEditCustomer}
+                            className="btn-luxury px-4 py-2 rounded-lg flex items-center space-x-2 justify-center"
+                        >
+                            <PencilIcon className="h-4 w-4" />
+                            <span>Edit Details</span>
+                        </button>
                     </div>
                 </div>
 
@@ -234,19 +294,27 @@ const CustomerDetail = () => {
                             <div className="space-y-4">
                                 {vehicles.map(vehicle => (
                                     <div key={vehicle.id} className="p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 hover:border-primary-500/30 transition-all duration-300">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-gradient-gold rounded-lg flex items-center justify-center">
-                                                <TruckIcon className="w-6 h-6 text-black" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-bold text-white">
-                                                    {vehicle.year} {vehicle.make} {vehicle.model}
-                                                </h4>
-                                                <div className="flex items-center space-x-4 text-sm text-white/60 mt-1">
-                                                    <span>Plate: {vehicle.license_plate}</span>
-                                                    {vehicle.vin && <span>VIN: {vehicle.vin.slice(-6)}</span>}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-4 flex-1">
+                                                <div className="w-12 h-12 bg-gradient-gold rounded-lg flex items-center justify-center">
+                                                    <TruckIcon className="w-6 h-6 text-black" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-white">
+                                                        {vehicle.year} {vehicle.make} {vehicle.model}
+                                                    </h4>
+                                                    <div className="flex items-center space-x-4 text-sm text-white/60 mt-1">
+                                                        <span>Plate: {vehicle.license_plate}</span>
+                                                        {vehicle.vin && <span>VIN: {vehicle.vin.slice(-6)}</span>}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <button
+                                                onClick={() => handleEditVehicle(vehicle)}
+                                                className="px-3 py-2 rounded-lg bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 transition-colors"
+                                            >
+                                                <PencilIcon className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -299,7 +367,7 @@ const CustomerDetail = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-green-400">${service.cost.toFixed(2)}</p>
+                                            <p className="font-bold text-green-400">₹{service.cost.toFixed(2)}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -508,7 +576,7 @@ const CustomerDetail = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Cost ($) *</label>
+                        <label className="block text-sm font-medium text-white/80 mb-2">Cost (₹) *</label>
                         <input 
                             type="number" 
                             placeholder="0.00" 
@@ -536,6 +604,157 @@ const CustomerDetail = () => {
                         </button>
                     </div>
                 </form>
+            </Modal>
+
+            <Modal title="Edit Customer Details" isOpen={isEditCustomerOpen} onClose={() => setEditCustomerOpen(false)}>
+                {editCustomerData && (
+                    <form onSubmit={handleSaveEditCustomer} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-2">Name *</label>
+                                <input 
+                                    type="text" 
+                                    value={editCustomerData.name || ''} 
+                                    onChange={e => setEditCustomerData({...editCustomerData, name: e.target.value})} 
+                                    className="form-input w-full px-4 py-3" 
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-2">Email</label>
+                                <input 
+                                    type="email" 
+                                    value={editCustomerData.email || ''} 
+                                    onChange={e => setEditCustomerData({...editCustomerData, email: e.target.value})} 
+                                    className="form-input w-full px-4 py-3" 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-2">Phone *</label>
+                                <input 
+                                    type="tel" 
+                                    value={editCustomerData.phone || ''} 
+                                    onChange={e => setEditCustomerData({...editCustomerData, phone: e.target.value})} 
+                                    className="form-input w-full px-4 py-3" 
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-2">VIP Coupon ID</label>
+                                <input 
+                                    type="text" 
+                                    value={editCustomerData.coupon_id || ''} 
+                                    onChange={e => setEditCustomerData({...editCustomerData, coupon_id: e.target.value || undefined})} 
+                                    className="form-input w-full px-4 py-3" 
+                                    placeholder="Leave empty if not VIP"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-white/80 mb-2">Address</label>
+                                <textarea 
+                                    value={editCustomerData.address || ''} 
+                                    onChange={e => setEditCustomerData({...editCustomerData, address: e.target.value})} 
+                                    className="form-input w-full px-4 py-3 h-24 resize-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end space-x-4 pt-6">
+                            <button 
+                                type="button" 
+                                onClick={() => setEditCustomerOpen(false)} 
+                                className="btn-secondary px-6 py-3 rounded-xl"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="btn-luxury px-6 py-3 rounded-xl"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
+
+            <Modal title="Edit Vehicle Details" isOpen={isEditVehicleOpen} onClose={() => setEditVehicleOpen(false)}>
+                {editVehicleData && (
+                    <form onSubmit={handleSaveEditVehicle} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-2">Make *</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="Toyota, Honda, Ford..." 
+                                    value={editVehicleData.make || ''} 
+                                    onChange={e => setEditVehicleData({...editVehicleData, make: e.target.value})} 
+                                    className="form-input w-full px-4 py-3" 
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-2">Model *</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="Camry, Civic, F-150..." 
+                                    value={editVehicleData.model || ''} 
+                                    onChange={e => setEditVehicleData({...editVehicleData, model: e.target.value})} 
+                                    className="form-input w-full px-4 py-3" 
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-2">Year *</label>
+                                <input 
+                                    type="number" 
+                                    value={editVehicleData.year || new Date().getFullYear()} 
+                                    onChange={e => setEditVehicleData({...editVehicleData, year: Number(e.target.value)})} 
+                                    className="form-input w-full px-4 py-3" 
+                                    min="1900" 
+                                    max={new Date().getFullYear() + 1} 
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-white/80 mb-2">License Plate *</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="ABC-1234" 
+                                    value={editVehicleData.license_plate || ''} 
+                                    onChange={e => setEditVehicleData({...editVehicleData, license_plate: e.target.value})} 
+                                    className="form-input w-full px-4 py-3" 
+                                    required
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-white/80 mb-2">VIN (Optional)</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="17-character VIN" 
+                                    value={editVehicleData.vin || ''} 
+                                    onChange={e => setEditVehicleData({...editVehicleData, vin: e.target.value})} 
+                                    className="form-input w-full px-4 py-3" 
+                                    maxLength={17}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end space-x-4 pt-6">
+                            <button 
+                                type="button" 
+                                onClick={() => setEditVehicleOpen(false)} 
+                                className="btn-secondary px-6 py-3 rounded-xl"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="btn-luxury px-6 py-3 rounded-xl"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                )}
             </Modal>
 
             <style jsx>{`

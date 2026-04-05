@@ -188,7 +188,7 @@ const Settings = () => {
                         </div>
                         
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Labor Rate ($/hour)</label>
+                            <label className="block text-sm font-medium text-white/80 mb-2">Labor Rate (₹/hour)</label>
                             <input 
                                 type="number" 
                                 value={financialSettings.laborRate}

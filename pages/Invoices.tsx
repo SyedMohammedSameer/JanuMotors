@@ -213,11 +213,11 @@ const Invoices = () => {
                     <div className="grid grid-cols-2 gap-4 text-center">
                         <div>
                             <p className="text-sm font-medium text-white/70">Revenue</p>
-                            <p className="text-lg font-bold text-primary-400">${invoiceStats.totalRevenue.toLocaleString()}</p>
+                            <p className="text-lg font-bold text-primary-400">₹{invoiceStats.totalRevenue.toLocaleString()}</p>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-white/70">Pending</p>
-                            <p className="text-lg font-bold text-red-400">${invoiceStats.pendingAmount.toLocaleString()}</p>
+                            <p className="text-lg font-bold text-red-400">₹{invoiceStats.pendingAmount.toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
@@ -295,21 +295,21 @@ const Invoices = () => {
                             <div className="space-y-3 mb-4">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-white/70">Subtotal</span>
-                                    <span className="text-white">${invoice.subtotal.toFixed(2)}</span>
+                                    <span className="text-white">₹{invoice.subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-white/70">Tax ({invoice.tax}%)</span>
-                                    <span className="text-white">${(invoice.subtotal * (invoice.tax / 100)).toFixed(2)}</span>
+                                    <span className="text-white">₹{(invoice.subtotal * (invoice.tax / 100)).toFixed(2)}</span>
                                 </div>
                                 {invoice.discount && invoice.discount > 0 && (
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm text-white/70">Discount</span>
-                                        <span className="text-green-400">-${invoice.discount.toFixed(2)}</span>
+                                        <span className="text-green-400">-₹{invoice.discount.toFixed(2)}</span>
                                     </div>
                                 )}
                                 <div className="flex items-center justify-between pt-2 border-t border-primary-500/10">
                                     <span className="font-semibold text-white">Total</span>
-                                    <span className="font-bold text-xl text-primary-400">${invoice.total.toFixed(2)}</span>
+                                    <span className="font-bold text-xl text-primary-400">₹{invoice.total.toFixed(2)}</span>
                                 </div>
                             </div>
 

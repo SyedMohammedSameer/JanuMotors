@@ -42,6 +42,7 @@ type Action =
     | { type: 'LOGOUT' }
     | { type: 'ADD_CUSTOMER'; payload: Customer }
     | { type: 'ADD_VEHICLE'; payload: Vehicle }
+    | { type: 'UPDATE_VEHICLE'; payload: Vehicle }
     | { type: 'ADD_JOB_CARD'; payload: JobCard }
     | { type: 'UPDATE_JOB_CARD'; payload: Partial<JobCard> & { id: string } }
     | { type: 'ADD_INVOICE'; payload: Invoice }
@@ -79,6 +80,12 @@ const appReducer = (state: AppState, action: Action): AppState => {
             return { ...state, customers: [...state.customers, action.payload], error: null };
         case 'ADD_VEHICLE':
             return { ...state, vehicles: [...state.vehicles, action.payload], error: null };
+        case 'UPDATE_VEHICLE':
+            return { 
+                ...state, 
+                vehicles: state.vehicles.map(v => v.id === action.payload.id ? action.payload : v),
+                error: null 
+            };
         case 'ADD_JOB_CARD':
             return { ...state, jobCards: [...state.jobCards, action.payload], error: null };
         case 'UPDATE_JOB_CARD':
@@ -378,6 +385,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     baseDispatch(action);
                     break;
                 }
+                case 'UPDATE_VEHICLE': {
+                    const result = await retryOperation(async () =>
+                        supabase.from('vehicles').update(action.payload).eq('id', action.payload.id)
+                    );
+                    if (result.error) throw result.error;
+                    baseDispatch(action);
+                    break;
+                }
                 case 'ADD_JOB_CARD': {
                     const result = await retryOperation(async () =>
                         supabase.from('job_cards').insert(action.payload).select()
@@ -399,6 +414,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                         supabase.from('invoices').insert(action.payload).select()
                     );
                     if (result.error) throw result.error;
+                    
+                    // Auto-reduce inventory based on invoice items
+                    const jobCard = state.jobCards.find(j => j.id === action.payload.job_card_id);
+                    if (jobCard && jobCard.parts_used.length > 0) {
+                        for (const part of jobCard.parts_used) {
+                            const inventoryItem = state.inventory.find(i => i.id === part.itemId);
+                            if (inventoryItem) {
+                                const updatedItem = {
+                                    ...inventoryItem,
+                                    quantity: Math.max(0, inventoryItem.quantity - part.quantity)
+                                };
+                                await supabase.from('inventory').update(updatedItem).eq('id', part.itemId);
+                                baseDispatch({ type: 'UPDATE_INVENTORY_ITEM', payload: updatedItem });
+                            }
+                        }
+                    }
+                    
                     baseDispatch({ ...action, payload: result.data[0] });
                     break;
                 }

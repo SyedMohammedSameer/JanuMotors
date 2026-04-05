@@ -72,6 +72,7 @@ CREATE TABLE public.customers (
     phone TEXT,
     email TEXT,
     address TEXT,
+    coupon_id TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     communication_log JSONB DEFAULT '[]'::jsonb,
     service_history JSONB DEFAULT '[]'::jsonb

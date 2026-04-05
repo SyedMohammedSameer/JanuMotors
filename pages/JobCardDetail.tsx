@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { JobStatus } from '../types';
-import { ClipboardDocumentListIcon, UsersIcon, TruckIcon, UserCircleIcon, WrenchScrewdriverIcon } from '../components/Icons';
+import { JobStatus, ServiceHistory, JobCard } from '../types';
+import Modal from '../components/Modal';
+import { ClipboardDocumentListIcon, UsersIcon, TruckIcon, UserCircleIcon, WrenchScrewdriverIcon, PencilIcon } from '../components/Icons';
 
 // Calendar Icon
 const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -21,6 +22,8 @@ const ClockIcon = (props: React.SVGProps<SVGSVGElement>) => (
 const JobCardDetail = () => {
     const { jobCardId } = useParams<{ jobCardId: string }>();
     const { state, dispatch } = useAppContext();
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editData, setEditData] = useState<Partial<JobCard> | null>(null);
 
     const jobCard = state.jobCards.find(j => j.id === jobCardId);
 
@@ -60,8 +63,45 @@ const JobCardDetail = () => {
         };
         if (newStatus === JobStatus.COMPLETED) {
             payload.completed_date = new Date().toISOString();
+            
+            // Log service history for the customer
+            if (customer) {
+                const serviceEntry: ServiceHistory = {
+                    id: `SH${Date.now()}`,
+                    date: new Date().toISOString(),
+                    description: jobCard.description,
+                    cost: 0, // Cost can be set from invoice later
+                };
+                
+                const updatedCustomer = {
+                    ...customer,
+                    service_history: [serviceEntry, ...customer.service_history],
+                };
+                
+                await dispatch({ type: 'UPDATE_CUSTOMER', payload: updatedCustomer });
+            }
         }
         await dispatch({ type: 'UPDATE_JOB_CARD', payload });
+    };
+
+    const handleEditOpen = () => {
+        setEditData({ ...jobCard });
+        setIsEditOpen(true);
+    };
+
+    const handleEditSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editData) return;
+        
+        const payload: Partial<JobCard> & { id: string } = {
+            id: jobCard.id,
+            description: editData.description || jobCard.description,
+            labor_hours: editData.labor_hours !== undefined ? editData.labor_hours : jobCard.labor_hours,
+        };
+        
+        await dispatch({ type: 'UPDATE_JOB_CARD', payload });
+        setIsEditOpen(false);
+        setEditData(null);
     };
 
     return (
@@ -94,6 +134,13 @@ const JobCardDetail = () => {
                             <span>{getStatusIcon(jobCard.status)}</span>
                             <span>{jobCard.status}</span>
                         </div>
+                        <button 
+                            onClick={handleEditOpen}
+                            className="px-4 py-2 rounded-lg bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 transition-colors flex items-center space-x-2"
+                        >
+                            <PencilIcon className="w-4 h-4" />
+                            <span>Edit</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -267,6 +314,48 @@ const JobCardDetail = () => {
                     </div>
                 </div>
             </div>
+
+            <Modal title="Edit Job Card Details" isOpen={isEditOpen} onClose={() => setIsEditOpen(false)}>
+                {editData && (
+                    <form onSubmit={handleEditSave} className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-white/80 mb-2">Job Description *</label>
+                            <textarea 
+                                value={editData.description || ''} 
+                                onChange={e => setEditData({...editData, description: e.target.value})} 
+                                className="form-input w-full px-4 py-3 h-32 resize-none" 
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-white/80 mb-2">Labor Hours</label>
+                            <input 
+                                type="number" 
+                                step="0.5"
+                                min="0"
+                                value={editData.labor_hours || 0} 
+                                onChange={e => setEditData({...editData, labor_hours: Number(e.target.value)})} 
+                                className="form-input w-full px-4 py-3"
+                            />
+                        </div>
+                        <div className="flex justify-end space-x-4 pt-6">
+                            <button 
+                                type="button" 
+                                onClick={() => setIsEditOpen(false)} 
+                                className="btn-secondary px-6 py-3 rounded-xl"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="btn-luxury px-6 py-3 rounded-xl"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
         </div>
     );
 };
