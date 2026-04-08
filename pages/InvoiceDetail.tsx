@@ -10,358 +10,261 @@ const CGST_RATE = 9;
 const SGST_RATE = 9;
 
 // ─── Pure jsPDF invoice builder (no screenshots) ────────────────────────────
+
+function numberToRealWords(amount: number): string {
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    if ((amount = Math.floor(amount)).toString().length > 9) return 'overflow';
+    const n = ('000000000' + amount).slice(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return '';
+    let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+    return str.trim() ? str.trim() + ' Rupees Only' : 'Zero Rupees Only';
+}
+
 async function buildInvoicePDF(
     invoice: Invoice,
     customer: Customer | undefined,
     vehicle: Vehicle | undefined
 ) {
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 14;
-    const rightEdge = pageWidth - margin;
-    const contentWidth = pageWidth - margin * 2;
-    const footerReserve = 22;
+    const pw = doc.internal.pageSize.getWidth();
+    const ph = doc.internal.pageSize.getHeight();
+    const m = 10; 
 
-    const setFill = (r: number, g: number, b: number) => doc.setFillColor(r, g, b);
-    const setDraw = (r: number, g: number, b: number) => doc.setDrawColor(r, g, b);
-    const setColor = (r: number, g: number, b: number) => doc.setTextColor(r, g, b);
-    const bold = (size: number) => { doc.setFont('helvetica', 'bold'); doc.setFontSize(size); };
-    const normal = (size: number) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(size); };
-
-    const ACCENT = [181, 137, 67] as [number, number, number];
-    const CHARCOAL = [24, 31, 40] as [number, number, number];
-    const INK = [31, 41, 55] as [number, number, number];
-    const MUTED = [107, 114, 128] as [number, number, number];
-    const BORDER = [221, 226, 232] as [number, number, number];
-    const WHITE = [255, 255, 255] as [number, number, number];
-    const SUCCESS = [22, 163, 74] as [number, number, number];
-    const DANGER = [220, 38, 38] as [number, number, number];
-    const WARNING = [217, 119, 6] as [number, number, number];
+    const safeValue = (value?: string, fallback = '') => value?.trim() || fallback;
+    const formatDate = (value?: string) => {
+        if (!value) return '';
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime())
+            ? value
+            : parsed.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+    };
 
     const amountFormatter = new Intl.NumberFormat('en-IN', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
+        useGrouping: false
     });
-    const formatCurrency = (value: number) => `INR ${amountFormatter.format(value)}`;
-    const formatDiscount = (value: number) => value > 0 ? `-INR ${amountFormatter.format(value)}` : 'INR 0.00';
-    const formatDate = (value?: string) => {
-        if (!value) return 'Not set';
-        const parsed = new Date(value);
-        return Number.isNaN(parsed.getTime())
-            ? value
-            : parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
-    const safeValue = (value?: string, fallback = 'Not provided') => value?.trim() || fallback;
+    const formatAmt = (val: number) => amountFormatter.format(val);
 
-    const cgst = invoice.subtotal * (CGST_RATE / 100);
-    const sgst = invoice.subtotal * (SGST_RATE / 100);
-    const total = invoice.subtotal + cgst + sgst - (invoice.discount || 0);
-
-    let y = margin;
-    const ensureSpace = (requiredHeight: number, nextPageY = 22) => {
-        if (y + requiredHeight > pageHeight - footerReserve) {
-            doc.addPage();
-            y = nextPageY;
+    const getLocalImageAsset = async (path: string) => {
+        try {
+            const res = await fetch(path);
+            const blob = await res.blob();
+            return await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+        } catch {
+            return null;
         }
     };
 
-    let logoData: string | null = null;
-    try {
-        const resp = await fetch('/assets/logo.png');
-        const blob = await resp.blob();
-        logoData = await new Promise(resolve => {
-            const fr = new FileReader();
-            fr.onload = () => resolve(fr.result as string);
-            fr.readAsDataURL(blob);
-        });
-    } catch {
-        logoData = null;
-    }
+    const bankQr = await getLocalImageAsset('/assets/bankqr.png');
+    const reviewQr = await getLocalImageAsset('/assets/reviewqr.png');
 
-    const drawCard = (x: number, top: number, width: number, title: string, primaryLines: string[], detailLines: string[]) => {
-        const primaryHeight = primaryLines.length * 5.2;
-        const detailHeight = detailLines.length * 4.6;
-        const height = Math.max(28, 14 + primaryHeight + detailHeight + 8);
+    let totalGross = invoice.subtotal;
+    const discountInc = invoice.discount || 0;
+    const payableTotal = totalGross - discountInc;
+    
+    let preTaxTotal = payableTotal / (1 + (CGST_RATE + SGST_RATE) / 100);
+    const totalTax = payableTotal - preTaxTotal;
+    const cgst = totalTax / 2;
+    const sgst = totalTax / 2;
+    
+    const baseTotalBeforeDiscount = totalGross / (1 + (CGST_RATE + SGST_RATE) / 100);
+    const baseDiscount = discountInc / (1 + (CGST_RATE + SGST_RATE) / 100);
 
-        setFill(...WHITE);
-        doc.roundedRect(x, top, width, height, 3, 3, 'F');
-        setDraw(...BORDER);
-        doc.roundedRect(x, top, width, height, 3, 3, 'S');
-
-        bold(8);
-        setColor(...ACCENT);
-        doc.text(title.toUpperCase(), x + 6, top + 8);
-
-        let lineY = top + 15;
-        bold(10.5);
-        setColor(...INK);
-        primaryLines.forEach(line => {
-            doc.text(line, x + 6, lineY);
-            lineY += 5.2;
-        });
-
-        normal(8.5);
-        setColor(...MUTED);
-        lineY += 1;
-        detailLines.forEach(line => {
-            doc.text(line, x + 6, lineY);
-            lineY += 4.6;
-        });
-
-        return height;
-    };
-
-    const headerHeight = 42;
-    setFill(...CHARCOAL);
-    doc.roundedRect(margin, y, contentWidth, headerHeight, 4, 4, 'F');
-    setFill(...ACCENT);
-    doc.roundedRect(margin, y, contentWidth, 3.5, 4, 4, 'F');
-
-    if (logoData) {
-        doc.addImage(logoData, 'PNG', margin + 6, y + 8, 16, 16);
-    }
-
-    bold(18);
-    setColor(...WHITE);
-    doc.text('JANU MOTORS', margin + 26, y + 13);
-
-    normal(8.5);
-    setColor(208, 214, 222);
-    doc.text('Opposite Sitara Gardens, Tilak Nagar, Kadapa', margin + 26, y + 20);
-    doc.text('Ph: +91 98765 43210', margin + 26, y + 25.5);
-    doc.text('GSTIN: 37XXXXX0000X1XX', margin + 26, y + 31);
-
-    const headerRightWidth = 58;
-    const headerRightX = rightEdge - headerRightWidth;
-    const headerRightInnerLeft = headerRightX + 4;
-    const headerRightInnerRight = rightEdge - 4;
-
-    bold(22);
-    setColor(...ACCENT);
-    doc.text('INVOICE', headerRightInnerRight, y + 13, { align: 'right' });
-
-    const statusColor =
-        invoice.payment_status === PaymentStatus.PAID ? SUCCESS :
-        invoice.payment_status === PaymentStatus.UNPAID ? DANGER : WARNING;
-    const statusLabel = invoice.payment_status.toUpperCase();
-    bold(7.5);
-    const badgeWidth = doc.getTextWidth(statusLabel) + 12;
-    setFill(...statusColor);
-    doc.roundedRect(headerRightInnerRight - badgeWidth, y + 17, badgeWidth, 6.5, 3.25, 3.25, 'F');
-    setColor(...WHITE);
-    doc.text(statusLabel, headerRightInnerRight - badgeWidth / 2, y + 21.2, { align: 'center' });
-
-    normal(7.2);
-    setColor(208, 214, 222);
-    doc.text('INVOICE NO', headerRightInnerLeft, y + 29.5);
-
-    const headerInvoiceLines = doc.splitTextToSize(invoice.id, headerRightWidth - 8);
-    bold(8.4);
-    setColor(...WHITE);
-    doc.text(headerInvoiceLines, headerRightInnerLeft, y + 34.5);
-
-    y += headerHeight + 8;
-
-    const metaGap = 6;
-    const metaWidth = (contentWidth - metaGap) / 2;
-    const metaHeight = 20;
-    const metaItems: Array<[string, string]> = [
-        ['Job Card', invoice.job_card_id],
-        ['Issue Date', formatDate(invoice.issue_date)],
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.3);
+    
+    let y = m;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('GSTIN : 37CZXXPB7686K2Z9', m + 2, y + 5);
+    doc.text('TAX INVOICE', pw / 2, y + 5, { align: 'center' });
+    doc.text('Cell : 8885333003', pw - m - 2, y + 5, { align: 'right' });
+    
+    y += 7;
+    doc.setFont('times', 'bold');
+    doc.setFontSize(30);
+    doc.text('JANU MOTORS', pw / 2, y + 8, { align: 'center' });
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('D.No. 38/5001-17, Kadapa to Bellary Road, Opp. Sitara Hotel, Tilak Nagar', pw/2, y + 14, { align: 'center' });
+    doc.text('Y.S.R. Kadapa Dist, A.P.', pw/2, y + 19, { align: 'center' });
+    
+    y += 22;
+    const headerBottomY = y;
+    doc.rect(m, m, pw - m*2, headerBottomY - m);
+    
+    let detailsHeight = 18;
+    doc.rect(m, y, pw - m*2, detailsHeight);
+    doc.line(pw / 2, y, pw / 2, y + detailsHeight);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    
+    const custName = safeValue(customer?.name, 'Walking Customer');
+    const custAddr = safeValue(customer?.address, '');
+    const custPhone = safeValue(customer?.phone, '');
+    
+    doc.text(`Name      : ${custName}`, m + 4, y + 5);
+    doc.text(`Address   : ${custAddr}`, m + 4, y + 10);
+    doc.text(`State       : 37`, m + 4, y + 15);
+    
+    doc.text(`Invoice No. : ${invoice.id}`, pw/2 + 4, y + 5);
+    doc.text(`Date of Issue : ${formatDate(invoice.issue_date)}`, pw/2 + 4, y + 10);
+    doc.text(`Customer Mobile: ${custPhone}`, pw/2 + 4, y + 15);
+    
+    y += detailsHeight;
+    
+    const cols = [
+        { w: 10, cx: m + 5 },
+        { w: 80, cx: m + 50 },
+        { w: 20, cx: m + 100 },
+        { w: 18, cx: m + 119 },
+        { w: 16, cx: m + 136 },
+        { w: 22, cx: m + 155 },
+        { w: 24, cx: m + 178 }
     ];
+    let vxPoints = [m, m+10, m+90, m+110, m+128, m+144, m+166, pw-m];
 
-    metaItems.forEach(([label, value], index) => {
-        const x = margin + index * (metaWidth + metaGap);
-        setFill(...WHITE);
-        doc.roundedRect(x, y, metaWidth, metaHeight, 2.5, 2.5, 'F');
-        setDraw(...BORDER);
-        doc.roundedRect(x, y, metaWidth, metaHeight, 2.5, 2.5, 'S');
-        setFill(...ACCENT);
-        doc.rect(x, y, metaWidth, 1.4, 'F');
-
-        normal(7.5);
-        setColor(...MUTED);
-        doc.text(label.toUpperCase(), x + 4, y + 7);
-
-        bold(9);
-        setColor(...INK);
-        const valueLines = doc.splitTextToSize(value, metaWidth - 8).slice(0, 2);
-        doc.text(valueLines, x + 4, y + 13);
+    let headerHeightRow = 8;
+    doc.rect(m, y, pw - m*2, headerHeightRow);
+    
+    doc.setFont('helvetica', 'normal');
+    
+    doc.text('No.', cols[0].cx, y+5, { align: 'center' });
+    doc.text('Description', m+12, y+5, { align: 'left' });
+    doc.text('HSN Code', cols[2].cx, y+5, { align: 'center' });
+    doc.text(['GST', 'Rate %'], cols[3].cx, y+3.5, { align: 'center' });
+    doc.text('Quantity', cols[4].cx, y+5, { align: 'center' });
+    doc.text('Rate', cols[5].cx, y+5, { align: 'center' });
+    doc.text('Amount', cols[6].cx, y+5, { align: 'center' });
+    
+    vxPoints.slice(1,-1).forEach(vx => doc.line(vx, y, vx, y + headerHeightRow));
+    
+    y += headerHeightRow;
+    
+    let tableBodyY = y;
+    let bY = ph - 100;
+    
+    doc.rect(m, y, pw - m*2, bY - y);
+    vxPoints.slice(1,-1).forEach(vx => doc.line(vx, y, vx, bY));
+    
+    let iy = y + 6;
+    invoice.items.forEach((item, index) => {
+        let baseRate = item.unit_price / (1 + (CGST_RATE + SGST_RATE) / 100);
+        let baseAmt = baseRate * item.quantity;
+        
+        doc.text(String(index + 1), cols[0].cx, iy, { align: 'center' });
+        doc.text(doc.splitTextToSize(item.description, 75)[0] || '', m+12, iy, { align: 'left' });
+        doc.text('18', cols[3].cx, iy, { align: 'center' });
+        doc.text(String(item.quantity), cols[4].cx, iy, { align: 'center' });
+        doc.text(formatAmt(baseRate), m+164, iy, { align: 'right' });
+        doc.text(formatAmt(baseAmt), pw-m-2, iy, { align: 'right' });
+        iy += 8;
     });
-
-    y += metaHeight + 8;
-
-    const cardGap = 6;
-    const leftCardWidth = contentWidth * 0.56;
-    const rightCardWidth = contentWidth - leftCardWidth - cardGap;
-    const customerPrimary = doc.splitTextToSize(safeValue(customer?.name, 'Walk-in Customer'), leftCardWidth - 12);
-    const customerDetails = [
-        ...doc.splitTextToSize(safeValue(customer?.phone, 'Phone not provided'), leftCardWidth - 12),
-        ...doc.splitTextToSize(safeValue(customer?.email, 'Email not provided'), leftCardWidth - 12),
-        ...doc.splitTextToSize(safeValue(customer?.address, 'Address not provided'), leftCardWidth - 12),
+    
+    const rightColLeft = m + 128; 
+    const amtVx = m + 166;
+    const textRightAlign = m + 164;
+    
+    doc.rect(rightColLeft, bY, pw - m - rightColLeft, 7);
+    doc.line(amtVx, bY, amtVx, bY + 7);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('TOTAL AMOUNT', textRightAlign, bY + 5.2, { align: 'right' });
+    doc.text(formatAmt(baseTotalBeforeDiscount), pw-m-2, bY + 5.2, { align: 'right' });
+    
+    let tY = bY + 7;
+    doc.rect(rightColLeft, tY, pw - m - rightColLeft, 7);
+    doc.line(amtVx, tY, amtVx, tY + 7);
+    doc.text('DISCOUNT', textRightAlign, tY + 5.2, { align: 'right' });
+    doc.text(baseDiscount > 0 ? formatAmt(baseDiscount) : '', pw-m-2, tY + 5.2, { align: 'right' });
+    
+    doc.rect(m, bY, rightColLeft - m, 14);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const wordsStr = `Total Invoice Amount in Words : ${numberToRealWords(payableTotal)}`;
+    const wordsLines = doc.splitTextToSize(wordsStr, rightColLeft - m - 8);
+    // Draw the potentially multi-line string centered vertically depending on lines
+    // For 1 line it's perfectly middle, for 2 lines it still fits inside 14mm height box
+    doc.text(wordsLines, m + 4, bY + 7);
+    
+    const taxLabels = [
+        { lbl: 'Total Amount Before Tax', val: preTaxTotal },
+        { lbl: 'Add : CGST', val: cgst },
+        { lbl: 'Add : SGST', val: sgst },
+        { lbl: 'Add : IGST', val: 0 },
+        { lbl: 'Total Tax Amount', val: totalTax },
+        { lbl: 'Round off', val: payableTotal - (preTaxTotal + totalTax) },
+        { lbl: 'Total Amount After Tax', val: payableTotal }
     ];
-    const vehiclePrimary = doc.splitTextToSize(
-        vehicle ? `${vehicle.make} ${vehicle.model}`.trim() : 'Vehicle not linked',
-        rightCardWidth - 12
-    );
-    const vehicleDetails = [
-        ...doc.splitTextToSize(
-            vehicle?.license_plate ? `Registration: ${vehicle.license_plate}` : 'Registration: Not provided',
-            rightCardWidth - 12
-        ),
-        ...(vehicle?.year ? doc.splitTextToSize(`Model Year: ${vehicle.year}`, rightCardWidth - 12) : []),
-        ...doc.splitTextToSize(`Service Ref: ${invoice.job_card_id}`, rightCardWidth - 12),
-    ];
-
-    const billToHeight = drawCard(margin, y, leftCardWidth, 'Bill To', customerPrimary, customerDetails);
-    const vehicleCardHeight = drawCard(
-        margin + leftCardWidth + cardGap,
-        y,
-        rightCardWidth,
-        'Vehicle & Service',
-        vehiclePrimary,
-        vehicleDetails
-    );
-
-    y += Math.max(billToHeight, vehicleCardHeight) + 10;
-
-    bold(9);
-    setColor(...ACCENT);
-    doc.text('SERVICE BREAKDOWN', margin, y);
-    normal(8);
-    setColor(...MUTED);
-    doc.text('Itemized labor and parts billed for this job', margin, y + 4.5);
-    y += 8;
-
-    autoTable(doc, {
-        startY: y,
-        margin: { left: margin, right: margin, bottom: footerReserve },
-        head: [['#', 'Description', 'Qty', 'Unit Price', 'Amount']],
-        body: invoice.items.map((item, i) => [
-            String(i + 1),
-            item.description,
-            String(item.quantity),
-            formatCurrency(item.unit_price),
-            formatCurrency(item.total),
-        ]),
-        theme: 'grid',
-        styles: {
-            font: 'helvetica',
-            fontSize: 8.6,
-            textColor: INK,
-            lineColor: BORDER,
-            lineWidth: 0.2,
-            cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
-            overflow: 'linebreak',
-            valign: 'middle',
-        },
-        headStyles: {
-            fillColor: CHARCOAL,
-            textColor: WHITE,
-            fontStyle: 'bold',
-            fontSize: 8.2,
-            halign: 'left',
-            cellPadding: { top: 4.2, bottom: 4.2, left: 4, right: 4 },
-        },
-        bodyStyles: {
-            textColor: INK,
-        },
-        alternateRowStyles: {
-            fillColor: [250, 248, 244],
-        },
-        columnStyles: {
-            0: { cellWidth: 10, halign: 'center' },
-            1: { cellWidth: 'auto' },
-            2: { cellWidth: 16, halign: 'center' },
-            3: { cellWidth: 34, halign: 'right' },
-            4: { cellWidth: 34, halign: 'right', fontStyle: 'bold' },
-        },
-        rowPageBreak: 'avoid',
+    
+    let lY = tY + 7;
+    taxLabels.forEach((row, i) => {
+        doc.rect(rightColLeft, lY, pw - m - rightColLeft, 7);
+        doc.line(amtVx, lY, amtVx, lY + 7);
+        
+        doc.setFont('helvetica', i===6 ? 'bold' : 'normal');
+        doc.text(row.lbl, textRightAlign, lY + 5.2, { align: 'right' });
+        doc.text(row.val === 0 && i===3 ? '' : formatAmt(row.val), pw-m-2, lY + 5.2, { align: 'right' });
+        lY += 7;
     });
-
-    const tableState = doc as jsPDF & { lastAutoTable?: { finalY?: number } };
-    y = (tableState.lastAutoTable?.finalY || y) + 10;
-
-    const summaryWidth = 78;
-    const notesWidth = contentWidth - summaryWidth - 8;
-    const notesText = invoice.payment_status === PaymentStatus.PAID
-        ? 'Payment has been received for this service. We appreciate your trust in Janu Motors.'
-        : 'Payment is due within 30 days of the issue date. Please reference the invoice number when making payment.';
-    const noteLines = doc.splitTextToSize(
-        `${notesText}\nQuestions about this invoice? Contact Janu Motors at +91 98765 43210.`,
-        notesWidth - 12
-    );
-    const notesHeight = Math.max(36, 18 + noteLines.length * 4.5 + 12);
-    const summaryHeight = 48;
-
-    ensureSpace(Math.max(notesHeight, summaryHeight) + 4);
-
-    setFill(...WHITE);
-    doc.roundedRect(margin, y, notesWidth, notesHeight, 3, 3, 'F');
-    setDraw(...BORDER);
-    doc.roundedRect(margin, y, notesWidth, notesHeight, 3, 3, 'S');
-
-    bold(8);
-    setColor(...ACCENT);
-    doc.text('PAYMENT & NOTES', margin + 6, y + 8);
-
-    normal(8.5);
-    setColor(...MUTED);
-    doc.text(noteLines, margin + 6, y + 14);
-
-    const signLineY = y + notesHeight - 11;
-    setDraw(184, 189, 194);
-    doc.setLineWidth(0.35);
-    doc.line(margin + 6, signLineY, margin + 56, signLineY);
-    normal(8);
-    setColor(...MUTED);
-    doc.text('Authorised Signatory', margin + 6, signLineY + 4.5);
-
-    const summaryX = margin + notesWidth + 8;
-    setFill(...WHITE);
-    doc.roundedRect(summaryX, y, summaryWidth, summaryHeight, 3, 3, 'F');
-    setDraw(...BORDER);
-    doc.roundedRect(summaryX, y, summaryWidth, summaryHeight, 3, 3, 'S');
-
-    bold(8);
-    setColor(...ACCENT);
-    doc.text('AMOUNT SUMMARY', summaryX + 5, y + 8);
-
-    const drawSummaryRow = (label: string, value: string, rowY: number) => {
-        normal(8);
-        setColor(...MUTED);
-        doc.text(label, summaryX + 5, rowY);
-        setColor(...INK);
-        doc.text(value, summaryX + summaryWidth - 5, rowY, { align: 'right' });
-    };
-
-    drawSummaryRow('Subtotal', formatCurrency(invoice.subtotal), y + 15);
-    drawSummaryRow(`CGST (${CGST_RATE}%)`, formatCurrency(cgst), y + 21);
-    drawSummaryRow(`SGST (${SGST_RATE}%)`, formatCurrency(sgst), y + 27);
-    drawSummaryRow('Discount', formatDiscount(invoice.discount || 0), y + 33);
-
-    setFill(...CHARCOAL);
-    doc.roundedRect(summaryX + 4, y + summaryHeight - 13, summaryWidth - 8, 9, 2, 2, 'F');
-    bold(10);
-    setColor(...WHITE);
-    doc.text('Total Due', summaryX + 8, y + summaryHeight - 7);
-    doc.text(formatCurrency(total), summaryX + summaryWidth - 8, y + summaryHeight - 7, { align: 'right' });
-
-    const totalPages = doc.getNumberOfPages();
-    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
-        doc.setPage(pageNumber);
-        setDraw(...BORDER);
-        doc.setLineWidth(0.3);
-        doc.line(margin, pageHeight - 15, rightEdge, pageHeight - 15);
-
-        normal(7.5);
-        setColor(...MUTED);
-        doc.text('Thank you for choosing Janu Motors', margin, pageHeight - 9.5);
-        doc.text('Opposite Sitara Gardens, Tilak Nagar, Kadapa', pageWidth / 2, pageHeight - 9.5, { align: 'center' });
-        doc.text(`Page ${pageNumber} of ${totalPages}`, rightEdge, pageHeight - 9.5, { align: 'right' });
+    
+    doc.rect(m, tY + 7, rightColLeft - m, 49);
+    
+    let bLeftX = m + 4;
+    doc.setFont('helvetica', 'bold');
+    doc.text('BANK DETAILS : ICICI BANK', bLeftX, tY + 14);
+    doc.text('Bank A/c No: 548805000022', bLeftX+2, tY + 20);
+    doc.text('IFS Code   : ICIC0005488', bLeftX+2, tY + 26);
+    
+    if (bankQr) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.text('SCAN TO PAY', m + 70.5, tY + 12, { align: 'center' });
+        doc.addImage(bankQr, 'PNG', m + 60, tY + 14, 21, 21);
+    }
+    if (reviewQr) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.text('RATE US', m + 98.5, tY + 12, { align: 'center' });
+        doc.addImage(reviewQr, 'PNG', m + 88, tY + 14, 21, 21);
     }
 
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.line(m, tY + 44, rightColLeft, tY + 44);
+    doc.text('Certified that the particulars given above are true and correct', bLeftX, tY + 51);
+    
+    let botY = lY; 
+    doc.rect(m, botY, pw - m*2, 22);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Terms & Conditions', m + 4, botY + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Goods once sold cannot be taken back', m + 4, botY + 10);
+    doc.text('Subject to Kadapa jurisdiction only', m + 4, botY + 14);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('For JANU MOTORS', pw - m - 26, botY + 6, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Authorised Signature', pw - m - 26, botY + 20, { align: 'center' });
+    
     return doc;
 }
 
@@ -383,7 +286,7 @@ const InvoiceDetail = () => {
     useEffect(() => {
         if (isEditing && editedInvoice) {
             const subtotal = editedInvoice.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
-            const total    = subtotal * (1 + (CGST_RATE + SGST_RATE) / 100) - (editedInvoice.discount || 0);
+            const total    = subtotal - (editedInvoice.discount || 0);
             setEditedInvoice(prev => prev ? {
                 ...prev, subtotal, total, tax: CGST_RATE + SGST_RATE,
                 items: prev.items.map(i => ({ ...i, total: i.quantity * i.unit_price }))
@@ -399,9 +302,10 @@ const InvoiceDetail = () => {
     const jobCard  = state.jobCards.find(jc => jc.id === invoice.job_card_id);
     const vehicle  = jobCard ? state.vehicles.find(v => v.id === jobCard.vehicle_id) : undefined;
 
-    const cgstAmt     = invoice.subtotal * (CGST_RATE / 100);
-    const sgstAmt     = invoice.subtotal * (SGST_RATE / 100);
-    const displayTotal = invoice.subtotal + cgstAmt + sgstAmt - (invoice.discount || 0);
+    const displayTotal = invoice.subtotal - (invoice.discount || 0);
+    const baseTotalAfterDiscount = displayTotal / (1 + (CGST_RATE + SGST_RATE) / 100);
+    const cgstAmt     = (displayTotal - baseTotalAfterDiscount) / 2;
+    const sgstAmt     = cgstAmt;
 
     const statusCls = (s: PaymentStatus) => ({
         [PaymentStatus.PAID]:    'bg-green-500/10 text-green-400 border-green-500/30',
@@ -606,15 +510,16 @@ const InvoiceDetail = () => {
                         <p className="text-xs font-bold text-white/70">For JANU MOTORS</p>
                     </div>
                     <div className="w-full sm:w-64 space-y-1 order-1 sm:order-2 text-xs">
-                        <div className="flex justify-between text-white/65"><span>Subtotal</span><span>₹{invoice.subtotal.toFixed(2)}</span></div>
-                        <div className="flex justify-between text-white/65"><span>CGST ({CGST_RATE}%)</span><span>₹{cgstAmt.toFixed(2)}</span></div>
-                        <div className="flex justify-between text-white/65"><span>SGST ({SGST_RATE}%)</span><span>₹{sgstAmt.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-white/65"><span>Subtotal (Inclusive)</span><span>₹{invoice.subtotal.toFixed(2)}</span></div>
                         <div className="flex justify-between text-white/60 items-center">
                             <span>Discount</span>
                             {isEditing
                                 ? <input type="number" value={invoice.discount || 0} onChange={e => setEditedInvoice({ ...invoice, discount: Number(e.target.value) })} className="w-20 p-1 rounded form-input text-xs text-right" />
                                 : <span>-₹{(invoice.discount || 0).toFixed(2)}</span>}
                         </div>
+                        <div className="flex justify-between text-white/40"><span className="text-[10px]">Tax Base (Pre-tax)</span><span className="text-[10px]">₹{baseTotalAfterDiscount.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-white/50"><span className="text-[10px]">Included CGST ({CGST_RATE}%)</span><span className="text-[10px]">₹{cgstAmt.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-white/50"><span className="text-[10px]">Included SGST ({SGST_RATE}%)</span><span className="text-[10px]">₹{sgstAmt.toFixed(2)}</span></div>
                         <div className="flex justify-between font-bold text-base text-primary-400 border-t-2 border-primary-500/20 pt-2">
                             <span>Total Due</span>
                             <span>₹{displayTotal.toFixed(2)}</span>
