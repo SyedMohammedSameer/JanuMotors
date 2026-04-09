@@ -126,51 +126,56 @@ async function buildInvoicePDF(
     
     y += detailsHeight;
     
-    const cols = [
-        { w: 10, cx: m + 5 },
-        { w: 80, cx: m + 50 },
-        { w: 20, cx: m + 100 },
-        { w: 18, cx: m + 119 },
-        { w: 16, cx: m + 136 },
-        { w: 22, cx: m + 155 },
-        { w: 24, cx: m + 178 }
+    const tableX = [
+        m,
+        m + 10,
+        m + 82,
+        m + 100,
+        m + 116,
+        m + 128,
+        m + 150,
+        m + 170,
+        pw - m
     ];
-    let vxPoints = [m, m+10, m+90, m+110, m+128, m+144, m+166, pw-m];
+    const headerHeightRow = 8;
 
-    let headerHeightRow = 8;
-    doc.rect(m, y, pw - m*2, headerHeightRow);
-    
+    doc.rect(tableX[0], y, tableX[8] - tableX[0], headerHeightRow);
     doc.setFont('helvetica', 'normal');
-    
-    doc.text('No.', cols[0].cx, y+5, { align: 'center' });
-    doc.text('Description', m+12, y+5, { align: 'left' });
-    doc.text('HSN Code', cols[2].cx, y+5, { align: 'center' });
-    doc.text(['GST', 'Rate %'], cols[3].cx, y+3.5, { align: 'center' });
-    doc.text('Quantity', cols[4].cx, y+5, { align: 'center' });
-    doc.text('Rate', cols[5].cx, y+5, { align: 'center' });
-    doc.text('Amount', cols[6].cx, y+5, { align: 'center' });
-    
-    vxPoints.slice(1,-1).forEach(vx => doc.line(vx, y, vx, y + headerHeightRow));
-    
+    doc.setFontSize(8);
+    doc.text('No.', (tableX[0] + tableX[1]) / 2, y + 5, { align: 'center' });
+    doc.text('Description', tableX[1] + 2, y + 5, { align: 'left' });
+    doc.text('HSN Code', (tableX[2] + tableX[3]) / 2, y + 5, { align: 'center' });
+    doc.text('GST %', (tableX[3] + tableX[4]) / 2, y + 5, { align: 'center' });
+    doc.text('Qty', (tableX[4] + tableX[5]) / 2, y + 5, { align: 'center' });
+    doc.text('Price', (tableX[5] + tableX[6]) / 2, y + 5, { align: 'center' });
+    doc.text('GST', (tableX[6] + tableX[7]) / 2, y + 5, { align: 'center' });
+    doc.text('Total', (tableX[7] + tableX[8]) / 2, y + 5, { align: 'center' });
+    doc.setFontSize(9);
+
+    tableX.slice(1).forEach(vx => doc.line(vx, y, vx, y + headerHeightRow));
+
     y += headerHeightRow;
-    
-    let tableBodyY = y;
-    let bY = ph - 100;
-    
-    doc.rect(m, y, pw - m*2, bY - y);
-    vxPoints.slice(1,-1).forEach(vx => doc.line(vx, y, vx, bY));
-    
+    const bY = ph - 100;
+    doc.rect(tableX[0], y, tableX[8] - tableX[0], bY - y);
+    tableX.slice(1).forEach(vx => doc.line(vx, y, vx, bY));
+
     let iy = y + 6;
     invoice.items.forEach((item, index) => {
-        let baseRate = item.unit_price / (1 + (CGST_RATE + SGST_RATE) / 100);
-        let baseAmt = baseRate * item.quantity;
-        
-        doc.text(String(index + 1), cols[0].cx, iy, { align: 'center' });
-        doc.text(doc.splitTextToSize(item.description, 75)[0] || '', m+12, iy, { align: 'left' });
-        doc.text('18', cols[3].cx, iy, { align: 'center' });
-        doc.text(String(item.quantity), cols[4].cx, iy, { align: 'center' });
-        doc.text(formatAmt(baseRate), m+164, iy, { align: 'right' });
-        doc.text(formatAmt(baseAmt), pw-m-2, iy, { align: 'right' });
+        const baseRate = item.unit_price / (1 + (CGST_RATE + SGST_RATE) / 100);
+        const gstAmount = item.unit_price - baseRate;
+        const itemGstTotal = gstAmount * item.quantity;
+        const itemTotalWithGst = item.unit_price * item.quantity;
+        const hsnCode = safeValue((item as any).hsn || (item as any).hsn_code, '');
+        const gstRateLabel = `${CGST_RATE + SGST_RATE}%`;
+
+        doc.text(String(index + 1), (tableX[0] + tableX[1]) / 2, iy, { align: 'center' });
+        doc.text(doc.splitTextToSize(item.description, tableX[2] - tableX[1] - 4)[0] || '', tableX[1] + 2, iy, { align: 'left' });
+        doc.text(hsnCode, (tableX[2] + tableX[3]) / 2, iy, { align: 'center' });
+        doc.text(gstRateLabel, (tableX[3] + tableX[4]) / 2, iy, { align: 'center' });
+        doc.text(String(item.quantity), (tableX[4] + tableX[5]) / 2, iy, { align: 'center' });
+        doc.text(formatAmt(item.unit_price), tableX[6] - 2, iy, { align: 'right' });
+        doc.text(formatAmt(itemGstTotal), tableX[7] - 2, iy, { align: 'right' });
+        doc.text(formatAmt(itemTotalWithGst), tableX[8] - 2, iy, { align: 'right' });
         iy += 8;
     });
     
@@ -183,7 +188,7 @@ async function buildInvoicePDF(
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.text('TOTAL AMOUNT', textRightAlign, bY + 5.2, { align: 'right' });
-    doc.text(formatAmt(baseTotalBeforeDiscount), pw-m-2, bY + 5.2, { align: 'right' });
+    doc.text(formatAmt(payableTotal), pw-m-2, bY + 5.2, { align: 'right' });
     
     let tY = bY + 7;
     doc.rect(rightColLeft, tY, pw - m - rightColLeft, 7);
@@ -225,9 +230,13 @@ async function buildInvoicePDF(
     
     let bLeftX = m + 4;
     doc.setFont('helvetica', 'bold');
-    doc.text('BANK DETAILS : ICICI BANK', bLeftX, tY + 14);
-    doc.text('Bank A/c No: 548805000022', bLeftX+2, tY + 20);
-    doc.text('IFS Code   : ICIC0005488', bLeftX+2, tY + 26);
+    doc.setFontSize(9);
+    doc.text('BANK DETAILS', bLeftX, tY + 14);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Bank: State Bank of India', bLeftX + 2, tY + 19);
+    doc.text('A/c No: 44823559046', bLeftX + 2, tY + 24);
+    doc.text('IFSC Code: SBIN0010109', bLeftX + 2, tY + 29);
     
     if (bankQr) {
         doc.setFont('helvetica', 'bold');
