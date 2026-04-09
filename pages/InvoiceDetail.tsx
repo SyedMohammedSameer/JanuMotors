@@ -232,11 +232,20 @@ async function buildInvoicePDF(
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.text('BANK DETAILS', bLeftX, tY + 14);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.text('Bank: State Bank of India', bLeftX + 2, tY + 19);
-    doc.text('A/c No: 44823559046', bLeftX + 2, tY + 24);
-    doc.text('IFSC Code: SBIN0010109', bLeftX + 2, tY + 29);
+    doc.text('ICICI BANK', bLeftX + 2, tY + 19);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.text('A/c No: 548805000022', bLeftX + 2, tY + 23);
+    doc.text('IFSC Code: ICIC0005488', bLeftX + 2, tY + 27);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('SBI BANK', bLeftX + 2, tY + 32);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.text('A/c No: 44823559046', bLeftX + 2, tY + 36);
+    doc.text('IFSC Code: SBIN0010109', bLeftX + 2, tY + 40);
     
     if (bankQr) {
         doc.setFont('helvetica', 'bold');
