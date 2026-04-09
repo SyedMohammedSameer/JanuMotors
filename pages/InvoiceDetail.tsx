@@ -66,7 +66,7 @@ async function buildInvoicePDF(
         }
     };
 
-    const bankQr = await getLocalImageAsset('/assets/bankqr.png');
+    const bankQr = await getLocalImageAsset('/assets/bankqr.jpeg');
     const reviewQr = await getLocalImageAsset('/assets/reviewqr.png');
 
     let totalGross = invoice.subtotal;
