@@ -6,6 +6,7 @@ import NotificationBell from './NotificationBell';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../supabaseClient';
 import { useDismiss } from '../utils/useDismiss';
+import { IST_TIME_ZONE } from '../utils/dateIST';
 
 const MenuIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
@@ -36,10 +37,10 @@ const Clock = () => {
     return (
         <div className="hidden xl:flex flex-col items-end text-right whitespace-nowrap">
             <div className="text-sm font-semibold text-white">
-                {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: IST_TIME_ZONE })}
             </div>
             <div className="text-xs text-primary-500/80">
-                {now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: IST_TIME_ZONE })}
             </div>
         </div>
     );

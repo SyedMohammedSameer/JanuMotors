@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { JobStatus, PaymentStatus } from '../types';
+import { todayIST } from '../utils/dateIST';
 import { useDismiss } from '../utils/useDismiss';
 
 const BellIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -47,9 +48,6 @@ const saveReadIds = (ids: string[]) => {
     }
 };
 
-const localDateString = (date = new Date()) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
 const NotificationBell: React.FC = () => {
     const { state, formatCurrency } = useAppContext();
     const navigate = useNavigate();
@@ -66,12 +64,13 @@ const NotificationBell: React.FC = () => {
     }, [location.pathname]);
 
     const notices = useMemo<Notice[]>(() => {
-        const today = localDateString();
+        const today = todayIST();
         const customerName = (id: string) => state.customers.find(c => c.id === id)?.name ?? 'Unknown customer';
+        const prefs = state.settings.notifications;
         const out: Notice[] = [];
 
         // Same low-stock rule the Dashboard uses (quantity below threshold), plus items that have run out.
-        state.inventory.forEach(item => {
+        if (prefs.lowStockAlerts) state.inventory.forEach(item => {
             if (item.quantity <= 0) {
                 out.push({
                     id: `stock-out:${item.id}`,
@@ -91,7 +90,7 @@ const NotificationBell: React.FC = () => {
             }
         });
 
-        state.invoices.forEach(invoice => {
+        if (prefs.invoiceReminders) state.invoices.forEach(invoice => {
             if (invoice.payment_status !== PaymentStatus.PAID && invoice.due_date && invoice.due_date < today) {
                 out.push({
                     id: `invoice-overdue:${invoice.id}:${invoice.payment_status}`,
@@ -103,7 +102,7 @@ const NotificationBell: React.FC = () => {
             }
         });
 
-        state.jobCards.forEach(job => {
+        if (prefs.jobAlerts) state.jobCards.forEach(job => {
             if (job.status === JobStatus.PENDING && !job.assigned_to) {
                 out.push({
                     id: `job-unassigned:${job.id}`,
@@ -115,7 +114,7 @@ const NotificationBell: React.FC = () => {
             }
         });
 
-        state.carwashBookings.forEach(booking => {
+        if (prefs.carWashAlerts) state.carwashBookings.forEach(booking => {
             if (booking.date === today && booking.status === 'Scheduled') {
                 out.push({
                     id: `wash-today:${booking.id}`,
@@ -129,7 +128,7 @@ const NotificationBell: React.FC = () => {
 
         const rank: Record<Tone, number> = { danger: 0, warning: 1, info: 2 };
         return out.sort((a, b) => rank[a.tone] - rank[b.tone]).slice(0, MAX_NOTICES);
-    }, [state.inventory, state.invoices, state.jobCards, state.carwashBookings, state.customers, formatCurrency]);
+    }, [state.inventory, state.invoices, state.jobCards, state.carwashBookings, state.customers, state.settings.notifications, formatCurrency]);
 
     const readSet = useMemo(() => new Set(readIds), [readIds]);
     const unreadCount = notices.filter(n => !readSet.has(n.id)).length;

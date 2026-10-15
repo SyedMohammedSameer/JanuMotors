@@ -64,13 +64,16 @@ const JobCardDetail = () => {
         if (newStatus === JobStatus.COMPLETED) {
             payload.completed_date = new Date().toISOString();
             
-            // Log service history for the customer
-            if (customer) {
+            // Log service history for the customer, once per job: completing the same job again
+            // (Completed -> In Progress -> Completed) must not add a duplicate entry.
+            const alreadyLogged = customer?.service_history.some(entry => entry.job_card_id === jobCard.id);
+            if (customer && !alreadyLogged) {
                 const serviceEntry: ServiceHistory = {
                     id: `SH${Date.now()}`,
                     date: new Date().toISOString(),
                     description: jobCard.description,
                     cost: 0, // Cost can be set from invoice later
+                    job_card_id: jobCard.id,
                 };
                 
                 const updatedCustomer = {

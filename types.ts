@@ -20,6 +20,7 @@ export interface ServiceHistory {
   date: string;
   description: string;
   cost: number;
+  job_card_id?: string; // set when the entry was logged automatically from a completed job card
 }
 
 export interface Customer {

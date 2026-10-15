@@ -1,6 +1,12 @@
 /* Modern Luxury Styles for JANU MOTORS */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
+/* Tailwind is built at compile time (see tailwind.config.js). The custom rules below intentionally come AFTER
+   the utilities, exactly as they did when the CDN stylesheet was injected before this file. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Global Styles */
 * {
   box-sizing: border-box;

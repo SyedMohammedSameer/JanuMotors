@@ -126,8 +126,9 @@ const CustomerDetail = () => {
             ...customer,
             name: editCustomerData.name || customer.name,
             phone: editCustomerData.phone || customer.phone,
-            email: editCustomerData.email || customer.email,
-            address: editCustomerData.address || customer.address,
+            // `??` (not `||`) so an emptied field is saved as empty instead of snapping back to the old value
+            email: editCustomerData.email ?? customer.email,
+            address: editCustomerData.address ?? customer.address,
             coupon_id: editCustomerData.coupon_id || null,
         };
         await dispatch({ type: 'UPDATE_CUSTOMER', payload: updatedCustomer });

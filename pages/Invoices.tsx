@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { PaymentStatus, JobStatus, Invoice, InvoiceItem } from '../types';
 import Modal from '../components/Modal';
 import { TrashIcon, DocumentTextIcon, PlusIcon } from '../components/Icons';
+import { todayIST, addDaysToDateString } from '../utils/dateIST';
 
 // Search Icon
 const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -97,9 +98,9 @@ const Invoices = () => {
         const job = state.jobCards.find(j => j.id === selectedJobId);
         if (!job) return;
         
-        const savedFinancial = localStorage.getItem('settings_financialSettings');
-        const settingsTaxRate = savedFinancial ? JSON.parse(savedFinancial).taxRate : 18;
-        const laborRate = savedFinancial ? JSON.parse(savedFinancial).laborRate : 80;
+        // Shared settings (database row, or this browser's saved values until the settings table exists)
+        const settingsTaxRate = state.settings.taxRate;
+        const laborRate = state.settings.laborRate;
 
         const laborItem: InvoiceItem = {
             description: 'Labor',
@@ -128,8 +129,8 @@ const Invoices = () => {
             id: `INV${Date.now()}`,
             job_card_id: job.id,
             customer_id: job.customer_id,
-            issue_date: new Date().toISOString().split('T')[0],
-            due_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            issue_date: todayIST(),
+            due_date: addDaysToDateString(todayIST(), 15),
             items,
             subtotal,
             tax: settingsTaxRate,

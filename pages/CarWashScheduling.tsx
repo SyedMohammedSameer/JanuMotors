@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import Modal from '../components/Modal';
 import { CarWashBooking } from '../types';
 import { PlusIcon, TrashIcon } from '../components/Icons';
+import { todayIST, addDaysToDateString } from '../utils/dateIST';
 
 // Car Wash Icon
 const CarWashIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -54,7 +55,7 @@ const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const CarWashScheduling = () => {
     const { state, dispatch } = useAppContext();
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(todayIST());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
     const [newBooking, setNewBooking] = useState({
@@ -98,9 +99,7 @@ const CarWashScheduling = () => {
     }, [dayBookings]);
 
     const handleDateChange = (days: number) => {
-        const currentDate = new Date(selectedDate);
-        currentDate.setUTCDate(currentDate.getUTCDate() + days);
-        setSelectedDate(currentDate.toISOString().split('T')[0]);
+        setSelectedDate(addDaysToDateString(selectedDate, days));
     };
 
     const openBookingModal = (timeSlot: string) => {
@@ -204,8 +203,9 @@ const CarWashScheduling = () => {
         });
     };
 
-    const isToday = selectedDate === new Date().toISOString().split('T')[0];
-    const isPast = new Date(selectedDate) < new Date(new Date().toISOString().split('T')[0]);
+    const todayStr = todayIST();
+    const isToday = selectedDate === todayStr;
+    const isPast = selectedDate < todayStr;
 
     const statTiles = [
         { label: 'Bookings', value: bookingStats.todaysBookings, Icon: CarWashIcon, accent: 'border-l-white/40', valueColor: 'text-white', iconColor: 'text-white/80 bg-white/10' },

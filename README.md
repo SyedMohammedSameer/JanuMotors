@@ -19,6 +19,19 @@ This is a comprehensive, full-featured Car Garage Management System built as a m
 
 ---
 
+## Development
+
+```bash
+npm install
+npm run dev     # local dev server (uses the Supabase project from your .env)
+npm test        # unit and component tests (no network, no database)
+npm run build   # production build into dist/
+```
+
+Tailwind CSS is compiled at build time (`tailwind.config.js`, `postcss.config.js`); the app no longer loads Tailwind from a CDN. "Today" everywhere in the app is the India Standard Time date (`utils/dateIST.ts`).
+
+---
+
 ## **Required Setup: Supabase Configuration**
 
 To run this application, you **MUST** create a Supabase project and configure the application to connect to it.
@@ -61,7 +74,6 @@ CREATE TABLE public.workers (
     role worker_role NOT NULL
 );
 ALTER TABLE public.workers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.workers FOR SELECT USING (true);
 CREATE POLICY "Allow all access for authenticated users" ON public.workers FOR ALL USING (auth.role() = 'authenticated');
 
 
@@ -78,7 +90,6 @@ CREATE TABLE public.customers (
     service_history JSONB DEFAULT '[]'::jsonb
 );
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.customers FOR SELECT USING (true);
 CREATE POLICY "Allow all access for authenticated users" ON public.customers FOR ALL USING (auth.role() = 'authenticated');
 
 
@@ -93,7 +104,6 @@ CREATE TABLE public.vehicles (
     owner_id TEXT NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE
 );
 ALTER TABLE public.vehicles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.vehicles FOR SELECT USING (true);
 CREATE POLICY "Allow all access for authenticated users" ON public.vehicles FOR ALL USING (auth.role() = 'authenticated');
 
 
@@ -108,7 +118,6 @@ CREATE TABLE public.inventory (
     supplier TEXT
 );
 ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.inventory FOR SELECT USING (true);
 CREATE POLICY "Allow all access for authenticated users" ON public.inventory FOR ALL USING (auth.role() = 'authenticated');
 
 
@@ -126,7 +135,6 @@ CREATE TABLE public.job_cards (
     completed_date TIMESTAMPTZ
 );
 ALTER TABLE public.job_cards ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.job_cards FOR SELECT USING (true);
 CREATE POLICY "Allow all access for authenticated users" ON public.job_cards FOR ALL USING (auth.role() = 'authenticated');
 
 
@@ -146,7 +154,6 @@ CREATE TABLE public.invoices (
     payment_method payment_method
 );
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.invoices FOR SELECT USING (true);
 CREATE POLICY "Allow all access for authenticated users" ON public.invoices FOR ALL USING (auth.role() = 'authenticated');
 
 
@@ -160,7 +167,6 @@ CREATE TABLE public.attendance (
     daily_pay NUMERIC(10, 2)
 );
 ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.attendance FOR SELECT USING (true);
 CREATE POLICY "Allow all access for authenticated users" ON public.attendance FOR ALL USING (auth.role() = 'authenticated');
 
 
@@ -174,10 +180,23 @@ CREATE TABLE public.payroll (
     notes TEXT
 );
 ALTER TABLE public.payroll ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON public.payroll FOR SELECT USING (true);
 CREATE POLICY "Allow all access for authenticated users" ON public.payroll FOR ALL USING (auth.role() = 'authenticated');
+
+-- 9. App Settings Table (one shared row: tax rate, labour rate, notification preferences)
+CREATE TABLE public.app_settings (
+    id TEXT PRIMARY KEY NOT NULL DEFAULT 'default',
+    tax_rate NUMERIC(5, 2) NOT NULL DEFAULT 18,
+    labor_rate NUMERIC(10, 2) NOT NULL DEFAULT 80,
+    notifications JSONB NOT NULL DEFAULT '{"lowStockAlerts": true, "invoiceReminders": true, "jobAlerts": true, "carWashAlerts": true}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all access for authenticated users" ON public.app_settings FOR ALL USING (auth.role() = 'authenticated');
+INSERT INTO public.app_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
 
 ```
 ---
+
+> **Security:** every table is protected by Row Level Security and is readable and writable **only by signed-in users**. There is deliberately no public (anonymous) read policy: the Supabase anon key ships inside the web app, so a public read policy would expose customers, invoices and payroll to anyone. If your database was created from an older version of this README, run [`db/remove_public_read_policies.sql`](db/remove_public_read_policies.sql) once in the SQL Editor. Existing projects that do not have the settings table yet should run [`db/create_app_settings_table.sql`](db/create_app_settings_table.sql). Until then the app keeps the tax and labour rates in the browser only.
 
 Once these steps are completed, the application will be connected to your Supabase project, and all data will be persistent. All features, including delete functionality, will work as expected.

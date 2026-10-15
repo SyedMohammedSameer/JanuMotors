@@ -6,51 +6,76 @@ import {
     InventoryItem,
     Worker,
     AttendanceRecord,
-    PayrollRecord
+    PayrollRecord,
+    CarWashBooking
 } from './types';
+import { AppSettingsRow } from './utils/settings';
+
+// supabase-js requires table rows to be plain object types; mapping over the interfaces makes them assignable.
+type Rowify<T> = { [K in keyof T]: T[K] };
 
 export interface Database {
   public: {
     Tables: {
       customers: {
-        Row: Customer;
-        Insert: Customer;
-        Update: Partial<Customer>;
+        Row: Rowify<Customer>;
+        Insert: Rowify<Customer>;
+        Update: Partial<Rowify<Customer>>;
+        Relationships: [];
       };
       vehicles: {
-        Row: Vehicle;
-        Insert: Vehicle;
-        Update: Partial<Vehicle>;
+        Row: Rowify<Vehicle>;
+        Insert: Rowify<Vehicle>;
+        Update: Partial<Rowify<Vehicle>>;
+        Relationships: [];
       };
       job_cards: {
-        Row: JobCard;
-        Insert: JobCard;
-        Update: Partial<JobCard>;
+        Row: Rowify<JobCard>;
+        Insert: Rowify<JobCard>;
+        Update: Partial<Rowify<JobCard>>;
+        Relationships: [];
       };
       invoices: {
-        Row: Invoice;
-        Insert: Invoice;
-        Update: Partial<Invoice>;
+        Row: Rowify<Invoice>;
+        Insert: Rowify<Invoice>;
+        Update: Partial<Rowify<Invoice>>;
+        Relationships: [];
       };
       inventory: {
-        Row: InventoryItem;
-        Insert: InventoryItem;
-        Update: Partial<InventoryItem>;
+        Row: Rowify<InventoryItem>;
+        Insert: Rowify<InventoryItem>;
+        Update: Partial<Rowify<InventoryItem>>;
+        Relationships: [];
       };
       workers: {
-        Row: Worker;
-        Insert: Worker;
-        Update: Partial<Worker>;
+        Row: Rowify<Worker>;
+        Insert: Rowify<Worker>;
+        Update: Partial<Rowify<Worker>>;
+        Relationships: [];
       };
       attendance: {
-        Row: AttendanceRecord;
-        Insert: AttendanceRecord;
-        Update: Partial<AttendanceRecord>;
+        Row: Rowify<AttendanceRecord>;
+        Insert: Rowify<AttendanceRecord>;
+        Update: Partial<Rowify<AttendanceRecord>>;
+        Relationships: [];
       };
       payroll: {
-        Row: PayrollRecord;
-        Insert: PayrollRecord;
-        Update: Partial<PayrollRecord>;
+        Row: Rowify<PayrollRecord>;
+        Insert: Rowify<PayrollRecord>;
+        Update: Partial<Rowify<PayrollRecord>>;
+        Relationships: [];
+      };
+      carwash_bookings: {
+        Row: Rowify<CarWashBooking>;
+        Insert: Rowify<CarWashBooking>;
+        Update: Partial<Rowify<CarWashBooking>>;
+        Relationships: [];
+      };
+      app_settings: {
+        Row: Rowify<AppSettingsRow>;
+        Insert: Rowify<AppSettingsRow>;
+        Update: Partial<Rowify<AppSettingsRow>>;
+        Relationships: [];
       };
     };
     Views: {

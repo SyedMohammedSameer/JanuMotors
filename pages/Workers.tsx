@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import Modal from '../components/Modal';
 import { Worker, AttendanceRecord } from '../types';
 import { PencilSquareIcon, UserGroupIcon, PlusIcon } from '../components/Icons';
+import { todayIST, IST_TIME_ZONE } from '../utils/dateIST';
 
 // Clock Icons
 const ClockIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -85,7 +86,7 @@ const Workers = () => {
     const [currentWorker, setCurrentWorker] = useState<Partial<Worker> | null>(null);
     const workerRoles: Worker['role'][] = ['Mechanic', 'Receptionist', 'Manager'];
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayIST();
 
     const todaysAttendance = useMemo(() => {
         return state.attendance.filter(a => a.date === today).sort((a,b) => new Date(b.clock_in).getTime() - new Date(a.clock_in).getTime());
@@ -133,7 +134,7 @@ const Workers = () => {
         if (!selectedWorkerId || !clockModalType) return;
         
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
+        const todayStr = todayIST();
         
         if (clockModalType === 'clock-in') {
             const newRecord: AttendanceRecord = {
@@ -337,7 +338,7 @@ const Workers = () => {
             <div className="card-luxury overflow-hidden">
                 <div className="p-4 sm:p-6 border-b border-primary-500/10">
                     <h3 className="text-base sm:text-lg font-semibold text-white">Today's Attendance</h3>
-                    <p className="text-white/60 text-sm mt-0.5">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-white/60 text-sm mt-0.5">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: IST_TIME_ZONE })}</p>
                 </div>
 
                 {/* Mobile: stacked records */}

@@ -1,6 +1,10 @@
 import React, { createContext, useReducer, useContext, ReactNode, useEffect, useRef } from 'react';
 import { Customer, Vehicle, JobCard, Invoice, InventoryItem, Worker, AttendanceRecord, PayrollRecord, CarWashBooking, JobStatus, PaymentStatus } from '../types';
 import { supabase } from '../supabaseClient';
+import {
+    AppSettings, SettingsStatus, DEFAULT_SETTINGS, SETTINGS_ROW_ID, normalizeSettings, settingsFromRow,
+    settingsToRow, readBrowserSettings, writeBrowserSettings, isMissingTableError
+} from '../utils/settings';
 
 interface AppState {
     loading: boolean;
@@ -16,6 +20,8 @@ interface AppState {
     attendance: AttendanceRecord[];
     payrollRecords: PayrollRecord[];
     carwashBookings: CarWashBooking[];
+    settings: AppSettings;
+    settingsStatus: SettingsStatus;
 }
 
 const initialState: AppState = {
@@ -31,11 +37,14 @@ const initialState: AppState = {
     workers: [],
     attendance: [],
     payrollRecords: [],
-    carwashBookings: []
+    carwashBookings: [],
+    settings: DEFAULT_SETTINGS,
+    settingsStatus: 'browser'
 };
 
 type Action =
     | { type: 'SET_INITIAL_DATA'; payload: Omit<AppState, 'isAuthenticated' | 'loading' | 'isConfigured' | 'error'> }
+    | { type: 'SET_SETTINGS'; payload: AppSettings; status: SettingsStatus }
     | { type: 'SET_LOADING'; payload: boolean }
     | { type: 'SET_ERROR'; payload: string | null }
     | { type: 'LOGIN' }
@@ -64,12 +73,14 @@ type Action =
     | { type: 'UPDATE_CARWASH_BOOKING'; payload: CarWashBooking }
     | { type: 'DELETE_CARWASH_BOOKING'; payload: { id: string } };
 
-const appReducer = (state: AppState, action: Action): AppState => {
+export const appReducer = (state: AppState, action: Action): AppState => {
     switch (action.type) {
         case 'SET_INITIAL_DATA':
             return { ...state, ...action.payload, loading: false, error: null };
         case 'SET_LOADING':
             return { ...state, loading: action.payload };
+        case 'SET_SETTINGS':
+            return { ...state, settings: action.payload, settingsStatus: action.status };
         case 'SET_ERROR':
             // Clearing an error (null) must not end an in-progress load, or pages render with empty data and
             // detail pages redirect away on refresh. Reporting an error still ends the load.
@@ -249,11 +260,27 @@ const retryOperation = async function<T>(
     throw new Error('Max retries exceeded');
 };
 
+// Decides which settings are in effect (shared database row > this browser's old values > defaults) and says which one won.
+export const resolveSettings = (error: unknown, rows: unknown): { settings: AppSettings; settingsStatus: SettingsStatus } => {
+    const browserValues = readBrowserSettings() ?? DEFAULT_SETTINGS;
+    if (error) {
+        // Table missing (SQL not run yet) or unreadable: keep working exactly as before, with this browser's values.
+        return { settings: browserValues, settingsStatus: 'browser' };
+    }
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (row) {
+        return { settings: settingsFromRow(row), settingsStatus: 'database' };
+    }
+    // Table exists but nobody has saved yet. Keep the values in use today until the first save.
+    return { settings: browserValues, settingsStatus: 'unsaved' };
+};
+
 const AppContext = createContext<{ 
     state: AppState; 
     dispatch: (action: Action) => Promise<void>;
     clearError: () => void;
     formatCurrency: (amount: number) => string;
+    saveSettings: (settings: AppSettings) => Promise<{ ok: boolean; status: SettingsStatus; message?: string }>;
 } | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
@@ -287,7 +314,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     { data: workers, error: e6 },
                     { data: attendance, error: e7 },
                     { data: payrollRecords, error: e8 },
-                    { data: carwashBookings, error: e9 }
+                    { data: carwashBookings, error: e9 },
+                    { data: settingsRows, error: e10 }
                 ] = await Promise.all([
                     supabase.from('customers').select('*'),
                     supabase.from('vehicles').select('*'),
@@ -298,11 +326,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     supabase.from('attendance').select('*'),
                     supabase.from('payroll').select('*'),
                     supabase.from('carwash_bookings').select('*'),
+                    supabase.from('app_settings').select('*').eq('id', SETTINGS_ROW_ID),
                 ]);
 
                 // Log individual table errors but don't fail the whole load.
                 // A missing table (404) should not block other tables from loading.
-                const tableErrors = [e1, e2, e3, e4, e5, e6, e7, e8, e9].filter(Boolean);
+                const tableErrors = [e1, e2, e3, e4, e5, e6, e7, e8, e9, e10].filter(Boolean);
                 if (tableErrors.length > 0) {
                     console.warn('Some tables failed to load:', tableErrors.map((e: any) => e?.message));
                 }
@@ -320,6 +349,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                         attendance: e7 ? [] : (attendance || []),
                         payrollRecords: e8 ? [] : (payrollRecords || []),
                         carwashBookings: e9 ? [] : (carwashBookings || []),
+                        ...resolveSettings(e10, settingsRows),
                     }
                 });
                 hasLoadedRef.current = true;
@@ -599,8 +629,34 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         baseDispatch({ type: 'SET_ERROR', payload: null });
     };
 
+    // Saves to the shared table. If the table does not exist yet, saves in this browser instead (and reports
+    // status 'browser' so the Settings page can tell the user). Any other failure is reported and nothing changes.
+    const saveSettings = async (next: AppSettings) => {
+        const settings = normalizeSettings(next);
+
+        const saveInBrowser = () => {
+            writeBrowserSettings(settings);
+            baseDispatch({ type: 'SET_SETTINGS', payload: settings, status: 'browser' });
+            return { ok: true, status: 'browser' as SettingsStatus };
+        };
+
+        if (!supabase) return saveInBrowser();
+
+        try {
+            const { error } = await supabase.from('app_settings').upsert(settingsToRow(settings));
+            if (error) {
+                if (isMissingTableError(error)) return saveInBrowser();
+                throw error;
+            }
+            baseDispatch({ type: 'SET_SETTINGS', payload: settings, status: 'database' });
+            return { ok: true, status: 'database' as SettingsStatus };
+        } catch (error: any) {
+            return { ok: false, status: state.settingsStatus, message: handleDatabaseError(error, 'saving settings') };
+        }
+    };
+
     return (
-        <AppContext.Provider value={{ state, dispatch, clearError, formatCurrency }}>
+        <AppContext.Provider value={{ state, dispatch, clearError, formatCurrency, saveSettings }}>
             {children}
         </AppContext.Provider>
     );
