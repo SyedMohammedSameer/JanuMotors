@@ -69,7 +69,8 @@ const DailyPayInput = ({ record, initialPay }: { record: AttendanceRecord, initi
             onChange={e => setPay(e.target.value)}
             onBlur={handleBlur}
             placeholder="0.00"
-            className="w-24 px-3 py-1 form-input text-sm rounded-lg text-center"
+            aria-label="Daily pay"
+            className="w-28 px-3 py-1.5 form-input text-sm rounded-lg text-right tabular-nums"
         />
     );
 };
@@ -192,20 +193,17 @@ const Workers = () => {
     };
 
     return (
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
-                        <UserGroupIcon className="h-8 w-8 mr-3 text-primary-500" />
-                        Worker Management
-                    </h1>
-                    <p className="text-white/60 mt-2">Manage your team and track attendance</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Worker Management</h1>
+                    <p className="text-sm text-white/60 mt-1">Manage your team and track attendance</p>
                 </div>
-                
+
                 <button
                     onClick={() => handleOpenWorkerModal(null)}
-                    className="btn-luxury px-6 py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap"
+                    className="btn-luxury w-full sm:w-auto px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0"
                 >
                     <PlusIcon className="h-5 w-5" />
                     <span>Add New Worker</span>
@@ -213,7 +211,13 @@ const Workers = () => {
             </div>
 
             {/* Workers Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                {state.workers.length === 0 && (
+                    <div className="card-luxury p-6 text-center sm:col-span-2 xl:col-span-3">
+                        <UserGroupIcon className="w-10 h-10 text-primary-500/50 mx-auto mb-3" />
+                        <p className="text-sm text-white/60">No workers added yet</p>
+                    </div>
+                )}
                 {state.workers.map(worker => {
                     const RoleIcon = getRoleIcon(worker.role);
                     const roleColor = getRoleColor(worker.role);
@@ -221,71 +225,68 @@ const Workers = () => {
                     const isActive = todayAttendance && !todayAttendance.clock_out;
 
                     return (
-                        <div key={worker.id} className="card-luxury p-6 group">
+                        <div key={worker.id} className="card-luxury p-4 sm:p-6 min-w-0">
                             {/* Worker Header */}
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-12 h-12 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-lg">
-                                        {worker.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-white text-lg">{worker.name}</h3>
-                                        <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${roleColor}`}>
-                                            <RoleIcon className="w-3 h-3" />
+                            <div className="flex items-start gap-3 mb-4">
+                                <div className="w-11 h-11 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-lg flex-shrink-0">
+                                    {worker.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="font-semibold text-white text-base break-words">{worker.name}</h3>
+                                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${roleColor}`}>
+                                            <RoleIcon className="w-3 h-3 flex-shrink-0" />
                                             <span>{worker.role}</span>
-                                        </div>
+                                        </span>
+                                        {isActive && (
+                                            <span className="inline-flex items-center px-2 py-0.5 bg-green-500/10 border border-green-500/30 rounded-full text-xs font-medium text-green-400 whitespace-nowrap">
+                                                Active
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                                
-                                <div className="flex items-center space-x-2">
-                                    {isActive && (
-                                        <div className="flex items-center space-x-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded-full">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                            <span className="text-xs font-medium text-green-400">Active</span>
-                                        </div>
-                                    )}
-                                    
-                                    <button
-                                        onClick={() => handleOpenWorkerModal(worker)}
-                                        className="p-2 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-all duration-300"
-                                    >
-                                        <PencilSquareIcon className="w-5 h-5" />
-                                    </button>
-                                </div>
+
+                                <button
+                                    onClick={() => handleOpenWorkerModal(worker)}
+                                    aria-label={`Edit ${worker.name}`}
+                                    className="p-2 -mt-1 -mr-2 flex-shrink-0 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-colors"
+                                >
+                                    <PencilSquareIcon className="w-5 h-5" />
+                                </button>
                             </div>
 
                             {/* Today's Activity */}
-                            <div className="space-y-3">
+                            <div className="space-y-3 border-t border-primary-500/10 pt-4">
                                 {todayAttendance ? (
                                     <>
-                                        <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center justify-between gap-3 text-sm">
                                             <span className="text-white/70">Clock In</span>
-                                            <span className="text-green-400 font-medium">
+                                            <span className="text-green-400 font-medium tabular-nums whitespace-nowrap">
                                                 {new Date(todayAttendance.clock_in).toLocaleTimeString()}
                                             </span>
                                         </div>
-                                        
-                                        <div className="flex items-center justify-between text-sm">
+
+                                        <div className="flex items-center justify-between gap-3 text-sm">
                                             <span className="text-white/70">Clock Out</span>
                                             {todayAttendance.clock_out ? (
-                                                <span className="text-red-400 font-medium">
+                                                <span className="text-red-400 font-medium tabular-nums whitespace-nowrap">
                                                     {new Date(todayAttendance.clock_out).toLocaleTimeString()}
                                                 </span>
                                             ) : (
-                                                <span className="text-primary-500 font-medium animate-pulse">Active</span>
+                                                <span className="text-primary-500 font-medium">Active</span>
                                             )}
                                         </div>
 
                                         {todayAttendance.clock_out && (
                                             <>
-                                                <div className="flex items-center justify-between text-sm">
+                                                <div className="flex items-center justify-between gap-3 text-sm">
                                                     <span className="text-white/70">Hours Worked</span>
-                                                    <span className="text-white font-medium">
+                                                    <span className="text-white font-medium tabular-nums whitespace-nowrap">
                                                         {((new Date(todayAttendance.clock_out).getTime() - new Date(todayAttendance.clock_in).getTime()) / 3600000).toFixed(1)}h
                                                     </span>
                                                 </div>
-                                                
-                                                <div className="flex items-center justify-between text-sm">
+
+                                                <div className="flex items-center justify-between gap-3 text-sm">
                                                     <span className="text-white/70">Daily Pay</span>
                                                     <DailyPayInput record={todayAttendance} initialPay={todayAttendance.daily_pay} />
                                                 </div>
@@ -293,9 +294,9 @@ const Workers = () => {
                                         )}
                                     </>
                                 ) : (
-                                    <div className="text-center py-4">
-                                        <ClockIcon className="w-8 h-8 text-primary-500/50 mx-auto mb-2" />
-                                        <p className="text-white/50 text-sm">Not clocked in today</p>
+                                    <div className="text-center py-2">
+                                        <ClockIcon className="w-7 h-7 text-primary-500/50 mx-auto mb-2" />
+                                        <p className="text-white/60 text-sm">Not clocked in today</p>
                                     </div>
                                 )}
                             </div>
@@ -305,28 +306,28 @@ const Workers = () => {
             </div>
 
             {/* Clock In/Out Controls */}
-            <div className="card-luxury p-6">
-                <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-                    <ClockIcon className="h-6 w-6 mr-3 text-primary-500" />
+            <div className="card-luxury p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <ClockIcon className="h-5 w-5 text-primary-500 flex-shrink-0" />
                     Attendance Control
                 </h3>
-                
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <button 
-                        onClick={() => openClockModal('clock-in')} 
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={() => openClockModal('clock-in')}
                         disabled={workersToClockIn.length === 0}
-                        className="flex-1 flex items-center justify-center space-x-2 px-6 py-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 hover:bg-green-500/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 min-h-[44px] bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <PlayIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <PlayIcon className="w-5 h-5 flex-shrink-0" />
                         <span className="font-semibold">Clock In ({workersToClockIn.length})</span>
                     </button>
-                    
-                    <button 
-                        onClick={() => openClockModal('clock-out')} 
+
+                    <button
+                        onClick={() => openClockModal('clock-out')}
                         disabled={workersToClockOut.length === 0}
-                        className="flex-1 flex items-center justify-center space-x-2 px-6 py-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 hover:bg-red-500/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 min-h-[44px] bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <StopIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <StopIcon className="w-5 h-5 flex-shrink-0" />
                         <span className="font-semibold">Clock Out ({workersToClockOut.length})</span>
                     </button>
                 </div>
@@ -335,19 +336,79 @@ const Workers = () => {
             {/* Today's Attendance Table */}
             <div className="card-luxury overflow-hidden">
                 <div className="p-4 sm:p-6 border-b border-primary-500/10">
-                    <h3 className="text-lg sm:text-xl font-bold text-white">Today's Attendance</h3>
-                    <p className="text-white/60 text-sm">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <h3 className="text-base sm:text-lg font-semibold text-white">Today's Attendance</h3>
+                    <p className="text-white/60 text-sm mt-0.5">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[480px]">
+                {/* Mobile: stacked records */}
+                <div className="sm:hidden divide-y divide-primary-500/10">
+                    {todaysAttendance.length > 0 ? todaysAttendance.map(record => {
+                        const worker = state.workers.find(w => w.id === record.worker_id);
+                        if (!worker) return null;
+
+                        const clockInTime = new Date(record.clock_in);
+                        const clockOutTime = record.clock_out ? new Date(record.clock_out) : null;
+                        const hours = clockOutTime ? ((clockOutTime.getTime() - clockInTime.getTime()) / 3600000) : 0;
+
+                        return (
+                            <div key={record.id} className="p-4 space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-sm flex-shrink-0">
+                                        {worker.name.charAt(0)}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="font-medium text-white text-sm break-words">{worker.name}</div>
+                                        <div className="text-xs text-primary-500/80">{worker.role}</div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wide text-white/60 mb-1">Clock In</div>
+                                        <div className="text-white tabular-nums">{clockInTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wide text-white/60 mb-1">Clock Out</div>
+                                        {clockOutTime ? (
+                                            <div className="text-white tabular-nums">{clockOutTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2 py-0.5 bg-green-500/10 border border-green-500/30 rounded-full text-green-400 font-medium text-xs">
+                                                Active
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wide text-white/60 mb-1">Hours</div>
+                                        <div className="text-white tabular-nums">{hours > 0 ? `${hours.toFixed(1)}h` : '-'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wide text-white/60 mb-1">Daily Pay</div>
+                                        {clockOutTime ? (
+                                            <DailyPayInput record={record} initialPay={record.daily_pay} />
+                                        ) : (
+                                            <span className="text-white/50 italic">Pending</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }) : (
+                        <div className="text-center py-10 px-4">
+                            <ClockIcon className="w-10 h-10 text-primary-500/50 mx-auto mb-3" />
+                            <p className="text-sm text-white/60">No attendance records for today</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Tablet and up: table */}
+                <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full min-w-[560px]">
                         <thead className="bg-dark-50/50">
-                            <tr className="text-left text-xs sm:text-sm font-semibold text-primary-500 uppercase tracking-wider">
-                                <th className="px-3 sm:px-6 py-3 sm:py-4">Worker</th>
-                                <th className="px-3 sm:px-6 py-3 sm:py-4">Clock In</th>
-                                <th className="px-3 sm:px-6 py-3 sm:py-4">Clock Out</th>
-                                <th className="px-3 sm:px-6 py-3 sm:py-4">Hours</th>
-                                <th className="px-3 sm:px-6 py-3 sm:py-4">Daily Pay</th>
+                            <tr className="text-left text-xs font-semibold text-primary-500 uppercase tracking-wide">
+                                <th className="px-3 sm:px-4 py-3">Worker</th>
+                                <th className="px-3 sm:px-4 py-3 whitespace-nowrap">Clock In</th>
+                                <th className="px-3 sm:px-4 py-3 whitespace-nowrap">Clock Out</th>
+                                <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Hours</th>
+                                <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Daily Pay</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-primary-500/10">
@@ -361,45 +422,44 @@ const Workers = () => {
 
                                 return (
                                     <tr key={record.id} className="hover:bg-primary-500/5 transition-colors">
-                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                            <div className="flex items-center space-x-2 sm:space-x-3">
-                                                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-xs sm:text-sm flex-shrink-0">
+                                        <td className="px-3 sm:px-4 py-3">
+                                            <div className="flex items-center gap-2 sm:gap-3">
+                                                <div className="w-8 h-8 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-sm flex-shrink-0">
                                                     {worker.name.charAt(0)}
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <div className="font-medium text-white text-sm truncate">{worker.name}</div>
+                                                <div className="min-w-[8rem] max-w-[16rem]">
+                                                    <div className="font-medium text-white text-sm break-words">{worker.name}</div>
                                                     <div className="text-xs text-primary-500/80">{worker.role}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-white text-sm">{clockInTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
+                                        <td className="px-3 sm:px-4 py-3 text-white text-sm tabular-nums whitespace-nowrap">{clockInTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                        <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
                                             {clockOutTime ? (
-                                                <span className="text-white text-sm">{clockOutTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                                <span className="text-white text-sm tabular-nums">{clockOutTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                             ) : (
-                                                <span className="flex items-center space-x-1 sm:space-x-2 text-green-400 font-semibold text-sm">
-                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></div>
-                                                    <span>Active</span>
+                                                <span className="inline-flex items-center px-2 py-0.5 bg-green-500/10 border border-green-500/30 rounded-full text-green-400 font-medium text-xs">
+                                                    Active
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-white text-sm">
+                                        <td className="px-3 sm:px-4 py-3 text-right text-white text-sm tabular-nums whitespace-nowrap">
                                             {hours > 0 ? `${hours.toFixed(1)}h` : '-'}
                                         </td>
-                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
+                                        <td className="px-3 sm:px-4 py-3 text-right">
                                             {clockOutTime ? (
                                                 <DailyPayInput record={record} initialPay={record.daily_pay} />
                                             ) : (
-                                                <span className="text-white/40 italic text-sm">Pending</span>
+                                                <span className="text-white/50 italic text-sm">Pending</span>
                                             )}
                                         </td>
                                     </tr>
                                 );
                             }) : (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-12">
-                                        <ClockIcon className="w-12 h-12 text-primary-500/50 mx-auto mb-4" />
-                                        <p className="text-white/60">No attendance records for today</p>
+                                    <td colSpan={5} className="text-center py-10 px-4">
+                                        <ClockIcon className="w-10 h-10 text-primary-500/50 mx-auto mb-3" />
+                                        <p className="text-sm text-white/60">No attendance records for today</p>
                                     </td>
                                 </tr>
                             )}
@@ -414,13 +474,13 @@ const Workers = () => {
                 isOpen={isClockModalOpen} 
                 onClose={() => setIsClockModalOpen(false)}
             >
-                <form onSubmit={handleClockSubmit} className="space-y-6">
+                <form onSubmit={handleClockSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Select Worker</label>
+                        <label className="block text-sm font-medium text-white/80 mb-1.5">Select Worker</label>
                         <select
                             value={selectedWorkerId}
                             onChange={(e) => setSelectedWorkerId(e.target.value)}
-                            className="form-input w-full px-4 py-3"
+                            className="form-input w-full min-w-0 px-4 py-2.5"
                             required
                         >
                             <option value="">-- Select a Worker --</option>
@@ -430,18 +490,18 @@ const Workers = () => {
                         </select>
                     </div>
                     
-                    <div className="flex justify-end space-x-4 pt-6">
-                        <button 
-                            type="button" 
-                            onClick={() => setIsClockModalOpen(false)} 
-                            className="btn-secondary px-6 py-3 rounded-xl"
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsClockModalOpen(false)}
+                            className="btn-secondary px-6 py-2.5 rounded-xl"
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
-                            disabled={!selectedWorkerId} 
-                            className="btn-luxury px-6 py-3 rounded-xl"
+                        <button
+                            type="submit"
+                            disabled={!selectedWorkerId}
+                            className="btn-luxury px-6 py-2.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Confirm {clockModalType === 'clock-in' ? 'Clock In' : 'Clock Out'}
                         </button>
@@ -455,27 +515,27 @@ const Workers = () => {
                 isOpen={isWorkerModalOpen} 
                 onClose={handleCloseWorkerModal}
             >
-                <form onSubmit={handleWorkerSubmit} className="space-y-6">
+                <form onSubmit={handleWorkerSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Worker Name *</label>
+                        <label className="block text-sm font-medium text-white/80 mb-1.5">Worker Name *</label>
                         <input 
                             type="text" 
                             name="name" 
                             value={currentWorker?.name || ''} 
                             onChange={handleWorkerChange} 
                             placeholder="Enter worker's full name"
-                            className="form-input w-full px-4 py-3" 
-                            required 
+                            className="form-input w-full min-w-0 px-4 py-2.5"
+                            required
                         />
                     </div>
-                    
+
                     <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Role *</label>
-                        <select 
-                            name="role" 
-                            value={currentWorker?.role || ''} 
-                            onChange={handleWorkerChange} 
-                            className="form-input w-full px-4 py-3" 
+                        <label className="block text-sm font-medium text-white/80 mb-1.5">Role *</label>
+                        <select
+                            name="role"
+                            value={currentWorker?.role || ''}
+                            onChange={handleWorkerChange}
+                            className="form-input w-full min-w-0 px-4 py-2.5"
                             required
                         >
                             {workerRoles.map(role => (
@@ -484,17 +544,17 @@ const Workers = () => {
                         </select>
                     </div>
                     
-                    <div className="flex justify-end space-x-4 pt-6">
-                        <button 
-                            type="button" 
-                            onClick={handleCloseWorkerModal} 
-                            className="btn-secondary px-6 py-3 rounded-xl"
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={handleCloseWorkerModal}
+                            className="btn-secondary px-6 py-2.5 rounded-xl"
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
-                            className="btn-luxury px-6 py-3 rounded-xl"
+                        <button
+                            type="submit"
+                            className="btn-luxury px-6 py-2.5 rounded-xl"
                         >
                             {currentWorker?.id ? 'Update Worker' : 'Add Worker'}
                         </button>

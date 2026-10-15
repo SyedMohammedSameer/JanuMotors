@@ -42,7 +42,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
   };
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in" role="dialog" aria-modal="true" aria-label={title}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 modal-backdrop"
@@ -65,7 +65,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
             
             <button 
               onClick={onClose}
-              className="p-2 rounded-xl text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300 group"
+              aria-label="Close dialog"
+              className="p-2 flex-shrink-0 rounded-xl text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300 group"
             >
               <XMarkIcon className="w-6 h-6 transition-transform duration-300 group-hover:rotate-90" />
             </button>
@@ -82,23 +83,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
           <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-accent"></div>
         </div>
       </div>
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(26, 26, 26, 0.3);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(135deg, #FFD700, #FFC107);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(135deg, #FFEB3B, #FFD700);
-        }
-      `}</style>
     </div>,
     document.body
   );

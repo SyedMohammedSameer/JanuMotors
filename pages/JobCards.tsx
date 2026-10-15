@@ -89,16 +89,6 @@ const JobCards = () => {
         }
     };
 
-    const getStatusIcon = (status: JobStatus) => {
-        switch (status) {
-            case JobStatus.PENDING: return '⏳';
-            case JobStatus.IN_PROGRESS: return '🔧';
-            case JobStatus.COMPLETED: return '✅';
-            case JobStatus.CANCELLED: return '❌';
-            default: return '📋';
-        }
-    };
-
     const handleCreateJobCard = async (e: React.FormEvent) => {
         e.preventDefault();
         const jobCardToAdd: JobCard = {
@@ -119,20 +109,17 @@ const JobCards = () => {
     };
     
     return (
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
-                        <WrenchScrewdriverIcon className="h-8 w-8 mr-3 text-primary-500" />
-                        Job Management
-                    </h1>
-                    <p className="text-white/60 mt-2">Track and manage service orders</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Job Management</h1>
+                    <p className="text-sm text-white/60 mt-1">Track and manage service orders</p>
                 </div>
-                
+
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="btn-luxury px-6 py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap"
+                    className="btn-luxury w-full sm:w-auto px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0"
                 >
                     <PlusIcon className="h-5 w-5" />
                     <span>Create Job Card</span>
@@ -140,68 +127,46 @@ const JobCards = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                <div className="card-luxury p-6 border-l-4 border-primary-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Total Jobs</p>
-                            <p className="text-2xl font-bold text-white">{jobStats.total}</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {[
+                    { label: 'Total Jobs', value: jobStats.total, icon: '📋', border: 'border-primary-500', valueColor: 'text-white' },
+                    { label: 'Pending', value: jobStats.pending, icon: '⏳', border: 'border-yellow-500', valueColor: 'text-yellow-400' },
+                    { label: 'In Progress', value: jobStats.inProgress, icon: '🔧', border: 'border-blue-500', valueColor: 'text-blue-400' },
+                    { label: 'Completed', value: jobStats.completed, icon: '✅', border: 'border-green-500', valueColor: 'text-green-400' },
+                ].map(stat => (
+                    <div key={stat.label} className={`card-luxury p-4 border-l-4 ${stat.border}`}>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-xs uppercase tracking-wide text-white/60 whitespace-nowrap">{stat.label}</p>
+                                <p className={`text-xl sm:text-2xl font-bold tabular-nums mt-1 ${stat.valueColor}`}>{stat.value}</p>
+                            </div>
+                            <div className="hidden sm:flex lg:hidden xl:flex items-center justify-center flex-shrink-0 h-10 w-10 rounded-xl bg-white/5 text-lg" aria-hidden="true">{stat.icon}</div>
                         </div>
-                        <div className="text-2xl">📋</div>
                     </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-yellow-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Pending</p>
-                            <p className="text-2xl font-bold text-yellow-400">{jobStats.pending}</p>
-                        </div>
-                        <div className="text-2xl">⏳</div>
-                    </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-blue-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">In Progress</p>
-                            <p className="text-2xl font-bold text-blue-400">{jobStats.inProgress}</p>
-                        </div>
-                        <div className="text-2xl">🔧</div>
-                    </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-green-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Completed</p>
-                            <p className="text-2xl font-bold text-green-400">{jobStats.completed}</p>
-                        </div>
-                        <div className="text-2xl">✅</div>
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* Search and Filter */}
             <div className="card-luxury p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                    <div className="flex-1 relative">
-                        <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500/50" />
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1 min-w-0 relative">
+                        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-500/50 pointer-events-none" />
                         <input
                             type="text"
-                            placeholder="Search by ID, customer or vehicle..."
+                            placeholder="Search by ID, customer, vehicle..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="form-input w-full pl-12 pr-4 py-3"
+                            className="form-input w-full min-w-0 pl-12 pr-4 py-2.5"
                         />
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                        <FunnelIcon className="w-5 h-5 text-primary-500/50" />
+                    <div className="relative w-full sm:w-auto">
+                        <FunnelIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-500/50 pointer-events-none" />
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="form-input px-4 py-3 min-w-[140px]"
+                            aria-label="Filter by status"
+                            className="form-input w-full sm:w-auto sm:min-w-[160px] pl-11 pr-4 py-2.5"
                         >
                             <option value="all">All Status</option>
                             <option value={JobStatus.PENDING}>Pending</option>
@@ -214,98 +179,75 @@ const JobCards = () => {
             </div>
 
             {/* Job Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {filteredJobCards.map(job => {
                     const customer = state.customers.find(c => c.id === job.customer_id);
                     const vehicle = state.vehicles.find(v => v.id === job.vehicle_id);
                     const worker = state.workers.find(w => w.id === job.assigned_to);
-                    
+                    const customerName = customer?.name || 'Unknown Customer';
+                    const vehicleName = vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : 'Unknown Vehicle';
+                    const workerName = worker?.name || 'Unassigned';
+
                     return (
-                        <div key={job.id} className="card-luxury p-6 group">
+                        <div key={job.id} className="card-luxury p-4 sm:p-5 flex flex-col">
                             {/* Job Header */}
-                            <div className="flex items-start justify-between mb-4">
-                                <div>
-                                    <h3 className="font-bold text-white text-lg font-mono">#{job.id}</h3>
-                                    <p className="text-primary-500/80 text-sm flex items-center">
-                                        <CalendarIcon className="w-4 h-4 mr-1" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-white text-base font-mono break-all" title={`#${job.id}`}>#{job.id}</h3>
+                                    <p className="text-xs text-white/60 flex items-center gap-1.5 mt-1">
+                                        <CalendarIcon className="w-4 h-4 flex-shrink-0 text-primary-500/80" />
                                         {new Date(job.created_at).toLocaleDateString()}
                                     </p>
                                 </div>
-                                
-                                <div className={`flex items-center space-x-2 px-3 py-1 rounded-full border text-xs font-semibold ${getStatusColor(job.status)}`}>
-                                    <span>{getStatusIcon(job.status)}</span>
-                                    <span>{job.status}</span>
-                                </div>
+
+                                <span className={`flex-shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full border text-xs font-semibold ${getStatusColor(job.status)}`}>
+                                    {job.status}
+                                </span>
                             </div>
 
-                            {/* Customer & Vehicle Info */}
-                            <div className="space-y-3 mb-4">
-                                <div className="flex items-center space-x-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                                    <UsersIcon className="w-5 h-5 text-primary-500 flex-shrink-0" />
+                            {/* Customer, Vehicle & Mechanic */}
+                            <div className="mt-4 space-y-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
+                                <div className="flex items-start gap-3">
+                                    <UsersIcon className="w-5 h-5 mt-0.5 text-primary-500 flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-white truncate">{customer?.name || 'Unknown Customer'}</p>
-                                        <p className="text-xs text-white/60">{customer?.phone}</p>
+                                        <p className="text-sm font-medium text-white break-words line-clamp-2" title={customerName}>{customerName}</p>
+                                        {customer?.phone && <p className="text-xs text-white/60 break-words">{customer.phone}</p>}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                                    <TruckIcon className="w-5 h-5 text-primary-500 flex-shrink-0" />
+                                <div className="flex items-start gap-3">
+                                    <TruckIcon className="w-5 h-5 mt-0.5 text-primary-500 flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-white truncate">
-                                            {vehicle?.year} {vehicle?.make} {vehicle?.model}
-                                        </p>
-                                        <p className="text-xs text-white/60">{vehicle?.license_plate}</p>
+                                        <p className="text-sm font-medium text-white break-words line-clamp-2" title={vehicleName}>{vehicleName}</p>
+                                        {vehicle?.license_plate && <p className="text-xs text-white/60 break-words">{vehicle.license_plate}</p>}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                                    <UserCircleIcon className="w-5 h-5 text-primary-500 flex-shrink-0" />
+                                <div className="flex items-start gap-3">
+                                    <UserCircleIcon className="w-5 h-5 mt-0.5 text-primary-500 flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-white truncate">{worker?.name || 'Unassigned'}</p>
-                                        <p className="text-xs text-white/60">{worker?.role}</p>
+                                        <p className={`text-sm font-medium break-words line-clamp-2 ${worker ? 'text-white' : 'text-white/60'}`} title={workerName}>{workerName}</p>
+                                        {worker?.role && <p className="text-xs text-white/60 break-words">{worker.role}</p>}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Job Description */}
-                            <div className="mb-6">
-                                <h4 className="text-sm font-medium text-white/80 mb-2">Description</h4>
-                                <p className="text-sm text-white/70 bg-dark-50/30 p-3 rounded-lg border border-primary-500/10 line-clamp-3">
+                            <div className="mt-4 flex-1">
+                                <h4 className="text-xs uppercase tracking-wide text-white/60 mb-1.5">Description</h4>
+                                <p className="text-sm text-white/70 break-words line-clamp-3" title={job.description}>
                                     {job.description}
                                 </p>
                             </div>
 
                             {/* Action Button */}
-                            <Link 
+                            <Link
                                 to={`/job-cards/${job.id}`}
-                                className="btn-secondary w-full py-3 rounded-xl flex items-center justify-center space-x-2 group-hover:bg-primary-500/20 transition-all duration-300"
+                                className="btn-secondary mt-4 w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm hover:bg-primary-500/20 transition-colors"
                             >
-                                <WrenchScrewdriverIcon className="w-5 h-5" />
+                                <WrenchScrewdriverIcon className="w-5 h-5 flex-shrink-0" />
                                 <span>View Details</span>
                             </Link>
-
-                            {/* Progress Indicator */}
-                            <div className="mt-4 pt-4 border-t border-primary-500/10">
-                                <div className="flex items-center justify-between text-xs text-white/60">
-                                    <span>Progress</span>
-                                    <span>
-                                        {job.status === JobStatus.PENDING && '0%'}
-                                        {job.status === JobStatus.IN_PROGRESS && '50%'}
-                                        {job.status === JobStatus.COMPLETED && '100%'}
-                                        {job.status === JobStatus.CANCELLED && 'Cancelled'}
-                                    </span>
-                                </div>
-                                <div className="mt-2 w-full bg-dark-100/50 rounded-full h-2">
-                                    <div 
-                                        className={`h-2 rounded-full transition-all duration-500 ${
-                                            job.status === JobStatus.PENDING ? 'w-0 bg-yellow-500' :
-                                            job.status === JobStatus.IN_PROGRESS ? 'w-1/2 bg-blue-500' :
-                                            job.status === JobStatus.COMPLETED ? 'w-full bg-green-500' :
-                                            'w-full bg-red-500'
-                                        }`}
-                                    ></div>
-                                </div>
-                            </div>
                         </div>
                     );
                 })}
@@ -313,17 +255,17 @@ const JobCards = () => {
 
             {/* Empty State */}
             {filteredJobCards.length === 0 && (
-                <div className="card-luxury p-12 text-center">
-                    <div className="w-20 h-20 bg-dark-100/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <WrenchScrewdriverIcon className="w-10 h-10 text-primary-500/50" />
+                <div className="card-luxury p-8 sm:p-12 text-center">
+                    <div className="w-16 h-16 bg-dark-100/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <WrenchScrewdriverIcon className="w-8 h-8 text-primary-500/50" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">No Job Cards Found</h3>
-                    <p className="text-white/60 mb-6">
-                        {searchTerm ? 'Try adjusting your search criteria' : 'Create your first job card to get started'}
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">No Job Cards Found</h3>
+                    <p className="text-sm text-white/60 mb-6">
+                        {searchTerm || statusFilter !== 'all' ? 'Try adjusting your search or filter' : 'Create your first job card to get started'}
                     </p>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="btn-luxury px-6 py-3 rounded-xl"
+                        className="btn-luxury w-full sm:w-auto px-5 py-2.5 rounded-xl"
                     >
                         Create First Job Card
                     </button>
@@ -331,18 +273,18 @@ const JobCards = () => {
             )}
 
             {/* Create Job Card Modal */}
-            <Modal title="Create New Job Card" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="lg">
-                <form onSubmit={handleCreateJobCard} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Customer *</label>
+            <Modal title="Create New Job Card" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="md">
+                <form onSubmit={handleCreateJobCard} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2 min-w-0">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Customer *</label>
                             <select
                                 value={selectedCustomerForJob}
                                 onChange={(e) => {
                                     setSelectedCustomerForJob(e.target.value);
                                     setNewJobCard({ ...newJobCard, customer_id: e.target.value, vehicle_id: '' });
                                 }}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full min-w-0 px-4 py-2.5"
                                 required
                             >
                                 <option value="">Select a customer</option>
@@ -352,12 +294,12 @@ const JobCards = () => {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Vehicle *</label>
+                        <div className="sm:col-span-2 min-w-0">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Vehicle *</label>
                             <select
                                 value={newJobCard.vehicle_id}
                                 onChange={e => setNewJobCard({ ...newJobCard, vehicle_id: e.target.value })}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full min-w-0 px-4 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={!selectedCustomerForJob}
                                 required
                             >
@@ -370,12 +312,12 @@ const JobCards = () => {
                             </select>
                         </div>
 
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-white/80 mb-2">Assign To *</label>
+                        <div className="sm:col-span-2 min-w-0">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Assign To *</label>
                             <select
                                 value={newJobCard.assigned_to}
                                 onChange={e => setNewJobCard({ ...newJobCard, assigned_to: e.target.value })}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full min-w-0 px-4 py-2.5"
                                 required
                             >
                                 <option value="">Select a mechanic</option>
@@ -385,29 +327,29 @@ const JobCards = () => {
                             </select>
                         </div>
 
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-white/80 mb-2">Job Description *</label>
+                        <div className="sm:col-span-2">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Job Description *</label>
                             <textarea
                                 placeholder="Describe the work to be performed (e.g., Oil change, brake repair, engine diagnostics...)"
                                 value={newJobCard.description}
                                 onChange={e => setNewJobCard({ ...newJobCard, description: e.target.value })}
-                                className="form-input w-full px-4 py-3 h-32 resize-none"
+                                className="form-input w-full px-4 py-2.5 h-32 resize-none"
                                 required
                             />
                         </div>
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-6">
-                        <button 
-                            type="button" 
-                            onClick={() => setIsModalOpen(false)} 
-                            className="btn-secondary px-6 py-3 rounded-xl"
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(false)}
+                            className="btn-secondary px-5 py-2.5 rounded-xl"
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
-                            className="btn-luxury px-6 py-3 rounded-xl"
+                        <button
+                            type="submit"
+                            className="btn-luxury px-5 py-2.5 rounded-xl"
                         >
                             Create Job Card
                         </button>

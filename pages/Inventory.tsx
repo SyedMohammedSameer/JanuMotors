@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { InventoryItem } from '../types';
 import Modal from '../components/Modal';
-import { PencilSquareIcon, TrashIcon, CircleStackIcon, PlusIcon } from '../components/Icons';
+import { PencilSquareIcon, TrashIcon, CircleStackIcon, PlusIcon, BanknotesIcon } from '../components/Icons';
 
 // Alert Icons
 const ExclamationTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -128,21 +128,25 @@ const Inventory = () => {
         }
     };
 
+    const statTiles = [
+        { label: 'Total Items', value: inventoryStats.total, valueClass: 'text-white', boxClass: 'bg-primary-500/10', icon: <CircleStackIcon className="h-5 w-5 text-primary-500" /> },
+        { label: 'Low Stock', value: inventoryStats.lowStock, valueClass: 'text-yellow-400', boxClass: 'bg-yellow-500/10', icon: <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" /> },
+        { label: 'Out of Stock', value: inventoryStats.outOfStock, valueClass: 'text-red-400', boxClass: 'bg-red-500/10', icon: <ExclamationTriangleIcon className="h-5 w-5 text-red-500" /> },
+        { label: 'Total Value', value: `₹${inventoryStats.totalValue.toLocaleString()}`, valueClass: 'text-primary-400', boxClass: 'bg-primary-500/10', icon: <BanknotesIcon className="h-5 w-5 text-primary-500" /> },
+    ];
+
     return (
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
-                        <CircleStackIcon className="h-8 w-8 mr-3 text-primary-500" />
-                        Inventory Management
-                    </h1>
-                    <p className="text-white/60 mt-2">Track parts, supplies, and stock levels</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Inventory Management</h1>
+                    <p className="text-sm text-white/60 mt-1">Track parts, supplies, and stock levels</p>
                 </div>
-                
-                <button 
+
+                <button
                     onClick={() => handleOpenModal(null)}
-                    className="btn-luxury px-6 py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap"
+                    className="btn-luxury w-full sm:w-auto px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0"
                 >
                     <PlusIcon className="h-5 w-5" />
                     <span>Add New Item</span>
@@ -150,68 +154,42 @@ const Inventory = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                <div className="card-luxury p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Total Items</p>
-                            <p className="text-2xl font-bold text-white">{inventoryStats.total}</p>
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                {statTiles.map(tile => (
+                    <div key={tile.label} className="card-luxury p-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-xs uppercase tracking-wide text-white/60">{tile.label}</p>
+                                <p className={`mt-1 text-xl sm:text-2xl font-bold tabular-nums break-words ${tile.valueClass}`}>{tile.value}</p>
+                            </div>
+                            <div className={`hidden sm:block flex-shrink-0 p-2.5 rounded-xl ${tile.boxClass}`}>{tile.icon}</div>
                         </div>
-                        <CircleStackIcon className="h-8 w-8 text-primary-500" />
                     </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-yellow-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Low Stock</p>
-                            <p className="text-2xl font-bold text-yellow-400">{inventoryStats.lowStock}</p>
-                        </div>
-                        <ExclamationTriangleIcon className="h-8 w-8 text-yellow-500" />
-                    </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-red-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Out of Stock</p>
-                            <p className="text-2xl font-bold text-red-400">{inventoryStats.outOfStock}</p>
-                        </div>
-                        <ExclamationTriangleIcon className="h-8 w-8 text-red-500" />
-                    </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-primary-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Total Value</p>
-                            <p className="text-2xl font-bold text-primary-400">₹{inventoryStats.totalValue.toLocaleString()}</p>
-                        </div>
-                        <div className="text-primary-500 text-3xl font-bold">₹</div>
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* Search and Filter */}
-            <div className="card-luxury p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                    <div className="flex-1 relative">
-                        <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500/50" />
+            <div className="card-luxury p-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1 min-w-0 relative">
+                        <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-500/50 pointer-events-none" />
                         <input
                             type="text"
-                            placeholder="Search by name, SKU, or supplier..."
+                            placeholder="Search name, SKU or supplier"
+                            aria-label="Search inventory"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="form-input w-full pl-12 pr-4 py-3"
+                            className="form-input w-full pl-11 pr-4 py-2.5"
                         />
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                        <FunnelIcon className="w-5 h-5 text-primary-500/50" />
+                    <div className="relative w-full sm:w-auto">
+                        <FunnelIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-500/50 pointer-events-none" />
                         <select
                             value={stockFilter}
                             onChange={(e) => setStockFilter(e.target.value)}
-                            className="form-input px-4 py-3 min-w-[140px]"
+                            aria-label="Filter by stock level"
+                            className="form-input w-full sm:w-auto sm:min-w-[170px] pl-11 pr-4 py-2.5"
                         >
                             <option value="all">All Items</option>
                             <option value="good">In Stock</option>
@@ -223,100 +201,95 @@ const Inventory = () => {
             </div>
 
             {/* Inventory Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-                {filteredInventory.map(item => {
-                    const stockInfo = getStockStatus(item);
-                    return (
-                        <div key={item.id} className="card-luxury p-6 group">
-                            {/* Item Header */}
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-white text-lg truncate">{item.name}</h3>
-                                    <p className="text-primary-500/80 text-sm font-mono">{item.sku}</p>
+            {filteredInventory.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                    {filteredInventory.map(item => {
+                        const stockInfo = getStockStatus(item);
+                        const toneText =
+                            stockInfo.status === 'out' ? 'text-red-400' :
+                            stockInfo.status === 'low' ? 'text-yellow-400' :
+                            'text-green-400';
+                        const toneBox =
+                            stockInfo.status === 'out' ? 'bg-red-500/10 border-red-500/30' :
+                            stockInfo.status === 'low' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                            'bg-green-500/10 border-green-500/30';
+                        return (
+                            <div key={item.id} className="card-luxury p-4 sm:p-5 flex flex-col">
+                                {/* Item Header */}
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-white text-base leading-snug break-words">{item.name}</h3>
+                                        <p className="text-primary-500/80 text-sm font-mono mt-0.5 break-all">{item.sku}</p>
+                                        {item.supplier && (
+                                            <p className="text-xs text-white/60 mt-1.5 break-words">
+                                                <span className="text-white/50">Supplier: </span>{item.supplier}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-1 flex-shrink-0 -mr-1.5 -mt-1.5">
+                                        <button
+                                            onClick={() => handleOpenModal(item)}
+                                            aria-label={`Edit ${item.name}`}
+                                            className="p-2 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-colors"
+                                        >
+                                            <PencilSquareIcon className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(item.id)}
+                                            aria-label={`Delete ${item.name}`}
+                                            className="p-2 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
-                                
-                                <div className="flex items-center space-x-2 ml-4">
-                                    <button
-                                        onClick={() => handleOpenModal(item)}
-                                        className="p-2 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-all duration-300"
-                                    >
-                                        <PencilSquareIcon className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(item.id)}
-                                        className="p-2 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-300"
-                                    >
-                                        <TrashIcon className="w-5 h-5" />
-                                    </button>
+
+                                {/* Stock status + figures: pinned to the card bottom so rows line up across a grid row */}
+                                <div className="mt-auto pt-4">
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap ${toneBox} ${toneText}`}>
+                                        <stockInfo.icon className="w-4 h-4 flex-shrink-0" />
+                                        {stockInfo.text}
+                                    </span>
+
+                                    <dl className="mt-3 pt-3 border-t border-primary-500/10 space-y-2 text-sm">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <dt className="text-white/60">Quantity</dt>
+                                            <dd className="font-semibold text-white tabular-nums text-right">{item.quantity}</dd>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <dt className="text-white/60">Unit Price</dt>
+                                            <dd className="font-semibold text-primary-400 tabular-nums text-right whitespace-nowrap">₹{item.price.toFixed(2)}</dd>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <dt className="text-white/60">Total Value</dt>
+                                            <dd className="font-semibold text-primary-400 tabular-nums text-right whitespace-nowrap">₹{(item.quantity * item.price).toFixed(2)}</dd>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <dt className="text-white/60">Low Stock Alert</dt>
+                                            <dd className="text-white tabular-nums text-right">{item.low_stock_threshold}</dd>
+                                        </div>
+                                    </dl>
                                 </div>
                             </div>
-
-                            {/* Stock Status */}
-                            <div className={`flex items-center space-x-2 p-3 rounded-lg mb-4 ${
-                                stockInfo.status === 'out' ? 'bg-red-500/10 border border-red-500/30' :
-                                stockInfo.status === 'low' ? 'bg-yellow-500/10 border border-yellow-500/30' :
-                                'bg-green-500/10 border border-green-500/30'
-                            }`}>
-                                <div className={`w-3 h-3 ${stockInfo.color} rounded-full animate-pulse`}></div>
-                                <span className={`text-sm font-medium ${
-                                    stockInfo.status === 'out' ? 'text-red-400' :
-                                    stockInfo.status === 'low' ? 'text-yellow-400' :
-                                    'text-green-400'
-                                }`}>
-                                    {stockInfo.text}
-                                </span>
-                                <stockInfo.icon className={`w-4 h-4 ml-auto ${
-                                    stockInfo.status === 'out' ? 'text-red-400' :
-                                    stockInfo.status === 'low' ? 'text-yellow-400' :
-                                    'text-green-400'
-                                }`} />
-                            </div>
-
-                            {/* Quantity and Price */}
-                            <div className="space-y-3 mb-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-white/70">Quantity</span>
-                                    <span className="font-bold text-white">{item.quantity}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-white/70">Unit Price</span>
-                                    <span className="font-bold text-primary-400">₹{item.price.toFixed(2)}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-white/70">Total Value</span>
-                                    <span className="font-bold text-primary-400">₹{(item.quantity * item.price).toFixed(2)}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-white/70">Low Stock Alert</span>
-                                    <span className="text-sm text-white">{item.low_stock_threshold}</span>
-                                </div>
-                            </div>
-
-                            {/* Supplier */}
-                            {item.supplier && (
-                                <div className="pt-4 border-t border-primary-500/10">
-                                    <p className="text-xs text-white/50">Supplier</p>
-                                    <p className="text-sm text-white/80 truncate">{item.supplier}</p>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* Empty State */}
             {filteredInventory.length === 0 && (
-                <div className="card-luxury p-12 text-center">
-                    <div className="w-20 h-20 bg-dark-100/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <CircleStackIcon className="w-10 h-10 text-primary-500/50" />
+                <div className="card-luxury p-8 sm:p-12 text-center">
+                    <div className="w-14 h-14 bg-dark-100/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CircleStackIcon className="w-7 h-7 text-primary-500/50" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">No Items Found</h3>
-                    <p className="text-white/60 mb-6">
-                        {searchTerm ? 'Try adjusting your search criteria' : 'Start building your inventory'}
+                    <h3 className="text-lg font-bold text-white mb-2">No Items Found</h3>
+                    <p className="text-sm text-white/60 mb-6">
+                        {searchTerm || stockFilter !== 'all' ? 'Try adjusting your search or filter criteria' : 'Start building your inventory'}
                     </p>
                     <button
                         onClick={() => handleOpenModal(null)}
-                        className="btn-luxury px-6 py-3 rounded-xl"
+                        className="btn-luxury px-5 py-2.5 rounded-xl"
                     >
                         Add First Item
                     </button>
@@ -325,98 +298,98 @@ const Inventory = () => {
 
             {/* Add/Edit Item Modal */}
             <Modal title={currentItem?.id ? 'Edit Item' : 'Add New Item'} isOpen={isModalOpen} onClose={handleCloseModal}>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-white/80 mb-2">Item Name *</label>
-                            <input 
-                                type="text" 
-                                name="name" 
-                                value={currentItem?.name || ''} 
-                                onChange={handleChange} 
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Item Name *</label>
+                            <input
+                                type="text"
+                                name="name"
+                                value={currentItem?.name || ''}
+                                onChange={handleChange}
                                 placeholder="e.g., Engine Oil 5W-30"
-                                className="form-input w-full px-4 py-3" 
-                                required 
+                                className="form-input w-full px-4 py-2.5"
+                                required
                             />
                         </div>
-                        
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">SKU *</label>
-                            <input 
-                                type="text" 
-                                name="sku" 
-                                value={currentItem?.sku || ''} 
-                                onChange={handleChange} 
+
+                        <div className="col-span-2 sm:col-span-1">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">SKU *</label>
+                            <input
+                                type="text"
+                                name="sku"
+                                value={currentItem?.sku || ''}
+                                onChange={handleChange}
                                 placeholder="e.g., ENG-OIL-5W30"
-                                className="form-input w-full px-4 py-3" 
-                                required 
+                                className="form-input w-full px-4 py-2.5"
+                                required
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Supplier</label>
-                            <input 
-                                type="text" 
-                                name="supplier" 
-                                value={currentItem?.supplier || ''} 
-                                onChange={handleChange} 
+                        <div className="col-span-2 sm:col-span-1">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Supplier</label>
+                            <input
+                                type="text"
+                                name="supplier"
+                                value={currentItem?.supplier || ''}
+                                onChange={handleChange}
                                 placeholder="e.g., Auto Parts Inc."
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full px-4 py-2.5"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Current Quantity *</label>
-                            <input 
-                                type="number" 
-                                name="quantity" 
-                                value={currentItem?.quantity || 0} 
-                                onChange={handleChange} 
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Current Quantity *</label>
+                            <input
+                                type="number"
+                                name="quantity"
+                                value={currentItem?.quantity || 0}
+                                onChange={handleChange}
                                 min="0"
-                                className="form-input w-full px-4 py-3" 
-                                required 
+                                className="form-input w-full px-4 py-2.5"
+                                required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Low Stock Threshold *</label>
-                            <input 
-                                type="number" 
-                                name="low_stock_threshold" 
-                                value={currentItem?.low_stock_threshold || 0} 
-                                onChange={handleChange} 
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Low Stock Threshold *</label>
+                            <input
+                                type="number"
+                                name="low_stock_threshold"
+                                value={currentItem?.low_stock_threshold || 0}
+                                onChange={handleChange}
                                 min="0"
-                                className="form-input w-full px-4 py-3" 
-                                required 
+                                className="form-input w-full px-4 py-2.5"
+                                required
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Unit Price (₹) *</label>
-                            <input 
-                                type="number" 
-                                name="price" 
-                                step="0.01" 
-                                value={currentItem?.price || 0} 
-                                onChange={handleChange} 
+                        <div className="col-span-2">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Unit Price (₹) *</label>
+                            <input
+                                type="number"
+                                name="price"
+                                step="0.01"
+                                value={currentItem?.price || 0}
+                                onChange={handleChange}
                                 min="0"
-                                className="form-input w-full px-4 py-3" 
-                                required 
+                                className="form-input w-full px-4 py-2.5"
+                                required
                             />
                         </div>
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-6">
-                        <button 
-                            type="button" 
-                            onClick={handleCloseModal} 
-                            className="btn-secondary px-6 py-3 rounded-xl"
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={handleCloseModal}
+                            className="btn-secondary px-6 py-2.5 rounded-xl"
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
-                            className="btn-luxury px-6 py-3 rounded-xl"
+                        <button
+                            type="submit"
+                            className="btn-luxury px-6 py-2.5 rounded-xl"
                         >
                             {currentItem?.id ? 'Update Item' : 'Add Item'}
                         </button>

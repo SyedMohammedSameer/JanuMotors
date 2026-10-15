@@ -287,7 +287,7 @@ async function buildInvoicePDF(
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────
-const InvoiceDetail = () => {
+const InvoiceDetailContent = () => {
     const { invoiceId } = useParams<{ invoiceId: string }>();
     const { state, dispatch } = useAppContext();
     const [isDownloading, setIsDownloading] = useState(false);
@@ -305,10 +305,14 @@ const InvoiceDetail = () => {
         if (isEditing && editedInvoice) {
             const subtotal = editedInvoice.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
             const total    = subtotal - (editedInvoice.discount || 0);
-            setEditedInvoice(prev => prev ? {
-                ...prev, subtotal, total, tax: CGST_RATE + SGST_RATE,
-                items: prev.items.map(i => ({ ...i, total: i.quantity * i.unit_price }))
-            } : null);
+            setEditedInvoice(prev => {
+                if (!prev) return null;
+                const items = prev.items.map(i => ({ ...i, total: i.quantity * i.unit_price }));
+                // Bail out when nothing changed; a fresh `items` array every time re-triggers this effect forever.
+                if (prev.subtotal === subtotal && prev.total === total && prev.tax === CGST_RATE + SGST_RATE
+                    && items.every((it, idx) => it.total === prev.items[idx].total)) return prev;
+                return { ...prev, subtotal, total, tax: CGST_RATE + SGST_RATE, items };
+            });
         }
     }, [isEditing, editedInvoice?.items, editedInvoice?.discount]);
 
@@ -377,34 +381,39 @@ const InvoiceDetail = () => {
         }
     };
 
+    // Edit mode on phones: table cells turn into labelled, stacked fields (the header row is hidden there).
+    const editCell = isEditing
+        ? 'max-sm:p-0 max-sm:before:block max-sm:before:content-[attr(data-label)] max-sm:before:mb-1 max-sm:before:text-[11px] max-sm:before:leading-4 max-sm:before:font-bold max-sm:before:uppercase max-sm:before:tracking-wide max-sm:before:text-primary-500 max-sm:before:text-left'
+        : '';
+
     return (
-        <div className="space-y-4 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
 
             {/* Toolbar */}
-            <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
-                <h2 className="text-xl font-bold text-white">Invoice Details</h2>
-                <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 print:hidden">
+                <h2 className="text-xl sm:text-2xl font-bold text-white min-w-0 break-words">Invoice {invoice.id}</h2>
+                <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
                     {!isEditing ? (
                         <>
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm text-white/60">Status:</label>
-                                <select value={invoice.payment_status} onChange={handleStatusChange}
-                                    className={`rounded-lg border-transparent px-3 py-1.5 text-sm font-semibold ${statusCls(invoice.payment_status)}`}>
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <label htmlFor="invoice-status" className="text-sm text-white/60">Status:</label>
+                                <select id="invoice-status" value={invoice.payment_status} onChange={handleStatusChange}
+                                    className={`flex-1 sm:flex-none min-w-0 rounded-lg border px-3 py-2.5 text-sm font-semibold max-[768px]:min-h-[44px] ${statusCls(invoice.payment_status)}`}>
                                     {Object.values(PaymentStatus).map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                             </div>
-                            <button onClick={() => setIsEditing(true)} className="btn-secondary px-3 py-2 rounded-xl flex items-center gap-2 text-sm">
-                                <PencilIcon className="h-4 w-4" /> Edit
+                            <button onClick={() => { setEditedInvoice(JSON.parse(JSON.stringify(originalInvoice))); setIsEditing(true); }} className="btn-secondary flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm whitespace-nowrap">
+                                <PencilIcon className="h-4 w-4 flex-shrink-0" /> Edit
                             </button>
                             <button onClick={handleDownloadPdf} disabled={isDownloading}
-                                className="btn-luxury px-4 py-2 rounded-xl flex items-center gap-2 text-sm disabled:opacity-50">
-                                <ArrowDownTrayIcon className="h-4 w-4" />
+                                className="btn-luxury flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50">
+                                <ArrowDownTrayIcon className="h-4 w-4 flex-shrink-0" />
                                 {isDownloading ? 'Generating…' : 'Download PDF'}
                             </button>
                             <button onClick={handlePrint} disabled={isDownloading}
-                                className="btn-luxury px-4 py-2 rounded-xl flex items-center gap-2 text-sm disabled:opacity-50"
+                                className="btn-luxury flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50"
                                 title="Print invoice">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4 flex-shrink-0">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.745h10.56m0 0v3.75m0-3.75v-1.972M6.72 13.745h-.75a2.25 2.25 0 0 0-2.25 2.25v6a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25v-6a2.25 2.25 0 0 0-2.25-2.25h-.75m0 0V6a2.25 2.25 0 0 0-2.25-2.25H9.75a2.25 2.25 0 0 0-2.25 2.25v6.745m0 0H3.75A2.25 2.25 0 0 0 1.5 22.25v-6a2.25 2.25 0 0 1 2.25-2.25h.75m0 0h6m-9 6h6" />
                                 </svg>
                                 {isDownloading ? 'Preparing…' : 'Print'}
@@ -413,62 +422,62 @@ const InvoiceDetail = () => {
                     ) : (
                         <>
                             <button onClick={() => { setIsEditing(false); setEditedInvoice(JSON.parse(JSON.stringify(originalInvoice))); }}
-                                className="btn-secondary px-4 py-2 rounded-xl text-sm">Cancel</button>
-                            <button onClick={handleSave} className="btn-luxury px-4 py-2 rounded-xl text-sm">Save</button>
+                                className="btn-secondary flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm">Cancel</button>
+                            <button onClick={handleSave} className="btn-luxury flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm">Save</button>
                         </>
                     )}
                 </div>
             </div>
 
             {/* Screen card */}
-            <div className="card-luxury p-6 sm:p-8 text-sm">
+            <div className="card-luxury p-4 sm:p-6 text-sm">
 
                 {/* Header */}
-                <div className="flex justify-between items-start gap-4 pb-5 border-b-2 border-primary-500/20">
-                    <div className="flex items-center gap-3">
-                        <img src="/assets/logo.png" alt="JANU MOTORS" className="h-14 w-14 rounded-xl flex-shrink-0" />
-                        <div>
-                            <p className="text-xl font-extrabold text-white tracking-wide">JANU MOTORS</p>
-                            <p className="text-xs text-white/55">Opposite Sitara Gardens, Tilak Nagar, Kadapa</p>
-                            <p className="text-xs text-white/55">Ph: +91 98765 43210</p>
-                            <p className="text-xs text-white/40 font-mono">GSTIN: 37XXXXX0000X1XX</p>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 pb-5 border-b-2 border-primary-500/20">
+                    <div className="flex items-start gap-3 min-w-0">
+                        <img src="/assets/logo.png" alt="JANU MOTORS" className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex-shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-lg sm:text-xl font-extrabold text-white tracking-wide">JANU MOTORS</p>
+                            <p className="text-xs text-white/60 max-w-xs">D.No. 38/5001-17, Kadapa to Bellary Road, Opp. Sitara Hotel, Tilak Nagar, Y.S.R. Kadapa Dist, A.P.</p>
+                            <p className="text-xs text-white/60 mt-0.5">Cell: 8885333003</p>
+                            <p className="text-xs text-white/50 font-mono">GSTIN: 37CZXPB7686K2Z9</p>
                         </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                        <p className="text-3xl font-black text-primary-400 uppercase tracking-widest">Invoice</p>
-                        <p className="text-white/50 font-mono text-xs mt-0.5">{invoice.id}</p>
-                        <div className="flex justify-end gap-5 mt-2">
-                            <div><p className="text-xs text-white/40 uppercase">Issued</p><p className="text-white text-xs font-medium">{invoice.issue_date}</p></div>
-                            <div><p className="text-xs text-white/40 uppercase">Due</p><p className="text-white text-xs font-medium">{invoice.due_date}</p></div>
+                    <div className="sm:text-right sm:flex-shrink-0 pt-4 border-t border-primary-500/10 sm:pt-0 sm:border-t-0">
+                        <p className="text-2xl sm:text-3xl font-black text-primary-400 uppercase tracking-widest">Invoice</p>
+                        <p className="text-white/60 font-mono text-xs mt-0.5 break-all">{invoice.id}</p>
+                        <div className="flex sm:justify-end gap-6 mt-2">
+                            <div><p className="text-xs text-white/50 uppercase tracking-wide">Issued</p><p className="text-white text-xs font-medium tabular-nums">{invoice.issue_date}</p></div>
+                            <div><p className="text-xs text-white/50 uppercase tracking-wide">Due</p><p className="text-white text-xs font-medium tabular-nums">{invoice.due_date}</p></div>
                         </div>
-                        <span className={`mt-2 inline-flex px-3 py-1 rounded-full border text-xs font-semibold ${statusCls(invoice.payment_status)}`}>
+                        <span className={`mt-3 inline-flex whitespace-nowrap px-3 py-1 rounded-full border text-xs font-semibold ${statusCls(invoice.payment_status)}`}>
                             {invoice.payment_status}
                         </span>
                     </div>
                 </div>
 
                 {/* Bill To / Vehicle / Job Ref */}
-                <div className="grid grid-cols-3 gap-4 py-4 border-b border-primary-500/10 text-xs">
-                    <div>
-                        <p className="font-bold text-primary-500 uppercase tracking-wider mb-1">Bill To</p>
-                        <p className="font-bold text-white text-sm">{customer?.name || '—'}</p>
-                        {customer?.phone   && <p className="text-white/65">{customer.phone}</p>}
-                        {customer?.email   && <p className="text-white/65">{customer.email}</p>}
-                        {customer?.address && <p className="text-white/50 mt-0.5">{customer.address}</p>}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4 border-b border-primary-500/10">
+                    <div className="min-w-0">
+                        <p className="text-xs font-bold text-primary-500 uppercase tracking-wider mb-1">Bill To</p>
+                        <p className="font-bold text-white break-words">{customer?.name || '—'}</p>
+                        {customer?.phone   && <p className="text-white/70">{customer.phone}</p>}
+                        {customer?.email   && <p className="text-white/70 break-all">{customer.email}</p>}
+                        {customer?.address && <p className="text-white/60 mt-0.5 break-words">{customer.address}</p>}
                     </div>
-                    <div>
-                        <p className="font-bold text-primary-500 uppercase tracking-wider mb-1">Vehicle</p>
+                    <div className="min-w-0">
+                        <p className="text-xs font-bold text-primary-500 uppercase tracking-wider mb-1">Vehicle</p>
                         {vehicle ? (
                             <>
-                                <p className="font-bold text-white text-sm">{vehicle.make} {vehicle.model}</p>
-                                <p className="text-white/65">Reg: <span className="font-semibold text-white">{vehicle.license_plate}</span></p>
-                                {vehicle.year && <p className="text-white/50">Year: {vehicle.year}</p>}
+                                <p className="font-bold text-white break-words">{vehicle.make} {vehicle.model}</p>
+                                <p className="text-white/70">Reg: <span className="font-semibold text-white">{vehicle.license_plate}</span></p>
+                                {vehicle.year && <p className="text-white/60">Year: {vehicle.year}</p>}
                             </>
-                        ) : <p className="text-white/35 italic">Not linked</p>}
+                        ) : <p className="text-white/50 italic">Not linked</p>}
                     </div>
-                    <div className="text-right">
-                        <p className="font-bold text-primary-500 uppercase tracking-wider mb-1">Job Card</p>
-                        <Link to={`/job-cards/${invoice.job_card_id}`} className="text-primary-400 hover:underline font-mono text-xs">
+                    <div className="min-w-0 sm:text-right">
+                        <p className="text-xs font-bold text-primary-500 uppercase tracking-wider mb-1">Job Card</p>
+                        <Link to={`/job-cards/${invoice.job_card_id}`} className="text-primary-400 hover:underline font-mono break-all">
                             {invoice.job_card_id}
                         </Link>
                     </div>
@@ -476,81 +485,91 @@ const InvoiceDetail = () => {
 
                 {/* Items */}
                 <div className="py-4">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="border-b border-primary-500/20 text-xs font-bold text-primary-500 uppercase tracking-wider">
-                                <th className="pb-2 pr-3 text-left">#</th>
-                                <th className="pb-2 pr-3 text-left">Description</th>
-                                <th className="pb-2 px-3 text-center w-14">Qty</th>
-                                <th className="pb-2 px-3 text-right w-28">Unit Price</th>
-                                <th className="pb-2 pl-3 text-right w-28">Amount</th>
-                                {isEditing && <th className="pb-2 pl-2 w-8"></th>}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-primary-500/10">
-                            {invoice.items.map((item, i) => (
-                                <tr key={i} className="text-xs">
-                                    <td className="py-2 pr-3 text-white/40">{i + 1}</td>
-                                    <td className="py-2 pr-3 text-white">
-                                        {isEditing ? <input type="text" value={item.description} onChange={e => handleItemChange(i, 'description', e.target.value)} className="w-full p-1 rounded form-input text-xs" /> : item.description}
-                                    </td>
-                                    <td className="py-2 px-3 text-center text-white/80">
-                                        {isEditing ? <input type="number" value={item.quantity} onChange={e => handleItemChange(i, 'quantity', Number(e.target.value))} className="w-full p-1 rounded form-input text-xs text-center" /> : item.quantity}
-                                    </td>
-                                    <td className="py-2 px-3 text-right text-white/80">
-                                        {isEditing ? <input type="number" value={item.unit_price} onChange={e => handleItemChange(i, 'unit_price', Number(e.target.value))} className="w-full p-1 rounded form-input text-xs text-right" /> : `₹${item.unit_price.toFixed(2)}`}
-                                    </td>
-                                    <td className="py-2 pl-3 text-right font-semibold text-white">₹{item.total.toFixed(2)}</td>
-                                    {isEditing && (
-                                        <td className="py-2 pl-2 text-right">
-                                            <button onClick={() => setEditedInvoice({ ...editedInvoice!, items: editedInvoice!.items.filter((_, idx) => idx !== i) })} className="text-red-500 hover:text-red-400">
-                                                <TrashIcon className="w-3.5 h-3.5" />
-                                            </button>
-                                        </td>
-                                    )}
+                    <div className="overflow-x-auto">
+                        {/* In edit mode on phones each item becomes a stacked block (inputs need width); otherwise a normal table */}
+                        <table className={`w-full ${isEditing ? 'max-sm:block' : ''}`}>
+                            <thead className={isEditing ? 'max-sm:hidden' : ''}>
+                                <tr className="border-b border-primary-500/20 text-xs font-bold text-primary-500 uppercase tracking-wider">
+                                    <th className="pb-2 pr-2 sm:pr-3 text-left w-6 max-sm:hidden">#</th>
+                                    <th className="pb-2 pr-2 sm:pr-3 text-left">Description</th>
+                                    <th className="pb-2 px-2 sm:px-3 text-center sm:w-16">Qty</th>
+                                    <th className="pb-2 px-2 sm:px-3 text-right sm:w-28">Unit Price</th>
+                                    <th className="pb-2 pl-2 sm:pl-3 text-right sm:w-28">Amount</th>
+                                    {isEditing && <th className="pb-2 pl-2 w-8"></th>}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className={`divide-y divide-primary-500/10 ${isEditing ? 'max-sm:block' : ''}`}>
+                                {invoice.items.map((item, i) => (
+                                    <tr key={i} className={`text-xs sm:text-sm align-top ${isEditing ? 'max-sm:grid max-sm:grid-cols-[4.5rem_1fr_1fr_auto] max-sm:gap-x-2 max-sm:gap-y-2 max-sm:py-3' : ''}`}>
+                                        <td className={`py-2.5 pr-2 sm:pr-3 text-white/50 tabular-nums max-sm:hidden`}>{i + 1}</td>
+                                        <td className={`py-2.5 pr-2 sm:pr-3 text-white [overflow-wrap:anywhere] min-w-[6rem] ${editCell} ${isEditing ? 'max-sm:col-span-4' : ''}`} data-label="Description">
+                                            {isEditing ? <input type="text" value={item.description} onChange={e => handleItemChange(i, 'description', e.target.value)} className="w-full px-2 py-1.5 rounded form-input text-xs sm:text-sm" /> : item.description}
+                                        </td>
+                                        <td className={`py-2.5 px-2 sm:px-3 text-center text-white/80 tabular-nums ${editCell}`} data-label="Qty">
+                                            {isEditing ? <input type="number" value={item.quantity} onChange={e => handleItemChange(i, 'quantity', Number(e.target.value))} className="w-full px-2 py-1.5 rounded form-input text-xs sm:text-sm text-center" /> : item.quantity}
+                                        </td>
+                                        <td className={`py-2.5 px-2 sm:px-3 text-right text-white/80 tabular-nums whitespace-nowrap ${editCell}`} data-label="Unit Price">
+                                            {isEditing ? <input type="number" value={item.unit_price} onChange={e => handleItemChange(i, 'unit_price', Number(e.target.value))} className="w-full px-2 py-1.5 rounded form-input text-xs sm:text-sm text-right" /> : `₹${item.unit_price.toFixed(2)}`}
+                                        </td>
+                                        <td className={`py-2.5 pl-2 sm:pl-3 text-right font-semibold text-white tabular-nums whitespace-nowrap ${editCell} ${isEditing ? 'max-sm:leading-[44px] max-sm:text-left' : ''}`} data-label="Amount">₹{item.total.toFixed(2)}</td>
+                                        {isEditing && (
+                                            <td className="py-2.5 pl-2 text-right max-sm:p-0 max-sm:self-end">
+                                                <button onClick={() => setEditedInvoice({ ...editedInvoice!, items: editedInvoice!.items.filter((_, idx) => idx !== i) })} className="p-1.5 max-sm:p-3 rounded-lg text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" aria-label={`Remove item ${i + 1}`}>
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                     {isEditing && (
                         <button onClick={() => setEditedInvoice({ ...editedInvoice!, items: [...editedInvoice!.items, { description: '', quantity: 1, unit_price: 0, total: 0 }] })}
-                            className="flex items-center gap-1 text-xs btn-secondary px-3 py-1 rounded-lg mt-3">
-                            <PlusIcon className="w-3.5 h-3.5" /> Add Item
+                            className="flex items-center gap-1.5 text-sm btn-secondary px-3 py-2 rounded-lg mt-3">
+                            <PlusIcon className="w-4 h-4" /> Add Item
                         </button>
                     )}
                 </div>
 
                 {/* Totals + Signature */}
-                <div className="flex flex-col sm:flex-row justify-between items-end gap-6 border-t border-primary-500/10 pt-4">
-                    <div className="text-center order-2 sm:order-1">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-6 border-t border-primary-500/10 pt-4">
+                    <div className="text-center order-2 sm:order-1 self-center sm:self-auto">
                         <div className="w-44 h-12 border-b-2 border-white/25 mb-1"></div>
-                        <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Authorised Signatory</p>
+                        <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Authorised Signatory</p>
                         <p className="text-xs font-bold text-white/70">For JANU MOTORS</p>
                     </div>
-                    <div className="w-full sm:w-64 space-y-1 order-1 sm:order-2 text-xs">
-                        <div className="flex justify-between text-white/65"><span>Subtotal (Inclusive)</span><span>₹{invoice.subtotal.toFixed(2)}</span></div>
-                        <div className="flex justify-between text-white/60 items-center">
+                    <div className="w-full sm:w-72 space-y-1.5 order-1 sm:order-2 text-sm tabular-nums">
+                        <div className="flex justify-between gap-4 text-white/70"><span>Subtotal (Inclusive)</span><span className="whitespace-nowrap">₹{invoice.subtotal.toFixed(2)}</span></div>
+                        <div className="flex justify-between gap-4 text-white/70 items-center">
                             <span>Discount</span>
                             {isEditing
-                                ? <input type="number" value={invoice.discount || 0} onChange={e => setEditedInvoice({ ...invoice, discount: Number(e.target.value) })} className="w-20 p-1 rounded form-input text-xs text-right" />
-                                : <span>-₹{(invoice.discount || 0).toFixed(2)}</span>}
+                                ? <input type="number" value={invoice.discount || 0} onChange={e => setEditedInvoice({ ...invoice, discount: Number(e.target.value) })} className="w-28 px-2 py-1.5 rounded form-input text-sm text-right" />
+                                : <span className="whitespace-nowrap">-₹{(invoice.discount || 0).toFixed(2)}</span>}
                         </div>
-                        <div className="flex justify-between text-white/40"><span className="text-[10px]">Tax Base (Pre-tax)</span><span className="text-[10px]">₹{baseTotalAfterDiscount.toFixed(2)}</span></div>
-                        <div className="flex justify-between text-white/50"><span className="text-[10px]">Included CGST ({CGST_RATE}%)</span><span className="text-[10px]">₹{cgstAmt.toFixed(2)}</span></div>
-                        <div className="flex justify-between text-white/50"><span className="text-[10px]">Included SGST ({SGST_RATE}%)</span><span className="text-[10px]">₹{sgstAmt.toFixed(2)}</span></div>
-                        <div className="flex justify-between font-bold text-base text-primary-400 border-t-2 border-primary-500/20 pt-2">
+                        <div className="flex justify-between gap-4 text-xs text-white/60"><span>Tax Base (Pre-tax)</span><span className="whitespace-nowrap">₹{baseTotalAfterDiscount.toFixed(2)}</span></div>
+                        <div className="flex justify-between gap-4 text-xs text-white/60"><span>Included CGST ({CGST_RATE}%)</span><span className="whitespace-nowrap">₹{cgstAmt.toFixed(2)}</span></div>
+                        <div className="flex justify-between gap-4 text-xs text-white/60"><span>Included SGST ({SGST_RATE}%)</span><span className="whitespace-nowrap">₹{sgstAmt.toFixed(2)}</span></div>
+                        <div className="flex justify-between gap-4 font-bold text-base text-primary-400 border-t-2 border-primary-500/20 pt-2">
                             <span>Total Due</span>
-                            <span>₹{displayTotal.toFixed(2)}</span>
+                            <span className="whitespace-nowrap">₹{displayTotal.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
 
-                <p className="mt-4 text-center text-xs text-white/30">
-                    Payment due within 30 days · Thank you for choosing Janu Motors!
+                <p className="mt-6 text-center text-xs text-white/50">
+                    Thank you for choosing Janu Motors!
                 </p>
             </div>
         </div>
     );
+};
+
+// Remount per invoice so edit state can't leak from one invoice to another when navigating A -> B in-app
+// (the route element is reused, so the useState initialiser above would otherwise keep showing/saving the old invoice).
+const InvoiceDetail = () => {
+    const { invoiceId } = useParams<{ invoiceId: string }>();
+    return <InvoiceDetailContent key={invoiceId} />;
 };
 
 export default InvoiceDetail;

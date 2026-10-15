@@ -38,6 +38,20 @@ const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+// Sparkles Icon (In Progress stat)
+const SparklesIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+    </svg>
+);
+
+// Check Circle Icon (Completed stat)
+const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
+
 const CarWashScheduling = () => {
     const { state, dispatch } = useAppContext();
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -85,7 +99,7 @@ const CarWashScheduling = () => {
 
     const handleDateChange = (days: number) => {
         const currentDate = new Date(selectedDate);
-        currentDate.setDate(currentDate.getDate() + days);
+        currentDate.setUTCDate(currentDate.getUTCDate() + days);
         setSelectedDate(currentDate.toISOString().split('T')[0]);
     };
 
@@ -128,8 +142,9 @@ const CarWashScheduling = () => {
         setIsModalOpen(false);
     };
 
-    const getBookingForSlot = (timeSlot: string) => {
-        return dayBookings.find(booking => {
+    // All bookings that fall in a slot (a slot can hold more than one booking)
+    const getBookingsForSlot = (timeSlot: string) => {
+        return dayBookings.filter(booking => {
             const storedTime = booking.time_slot;
             return storedTime === timeSlot || storedTime === timeSlot + ':00' || storedTime + ':00' === timeSlot;
         });
@@ -143,6 +158,17 @@ const CarWashScheduling = () => {
             case 'Interior Only': return 'from-orange-500 to-orange-600';
             case 'Exterior Only': return 'from-red-500 to-red-600';
             default: return 'from-gray-500 to-gray-600';
+        }
+    };
+
+    const getServiceAccent = (serviceType: string) => {
+        switch (serviceType) {
+            case 'Basic Wash': return 'border-l-blue-500';
+            case 'Premium Wash': return 'border-l-purple-500';
+            case 'Full Detail': return 'border-l-green-500';
+            case 'Interior Only': return 'border-l-orange-500';
+            case 'Exterior Only': return 'border-l-red-500';
+            default: return 'border-l-gray-500';
         }
     };
 
@@ -168,48 +194,121 @@ const CarWashScheduling = () => {
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+        // dateStr is a plain YYYY-MM-DD (parsed as UTC), so format it in UTC too or it can show the previous day
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'UTC'
         });
     };
 
     const isToday = selectedDate === new Date().toISOString().split('T')[0];
     const isPast = new Date(selectedDate) < new Date(new Date().toISOString().split('T')[0]);
 
+    const statTiles = [
+        { label: 'Bookings', value: bookingStats.todaysBookings, Icon: CarWashIcon, accent: 'border-l-white/40', valueColor: 'text-white', iconColor: 'text-white/80 bg-white/10' },
+        { label: 'Scheduled', value: bookingStats.scheduled, Icon: ClockIcon, accent: 'border-l-blue-500', valueColor: 'text-blue-400', iconColor: 'text-blue-400 bg-blue-500/10' },
+        { label: 'In Progress', value: bookingStats.inProgress, Icon: SparklesIcon, accent: 'border-l-yellow-500', valueColor: 'text-yellow-400', iconColor: 'text-yellow-400 bg-yellow-500/10' },
+        { label: 'Completed', value: bookingStats.completed, Icon: CheckCircleIcon, accent: 'border-l-green-500', valueColor: 'text-green-400', iconColor: 'text-green-400 bg-green-500/10' }
+    ];
+
+    const renderBooking = (booking: CarWashBooking) => {
+        const customer = state.customers.find(c => c.id === booking.customer_id);
+        const vehicle = state.vehicles.find(v => v.id === booking.vehicle_id);
+        // Walk-in bookings store the typed name in customer_id
+        const customerName = customer?.name || booking.customer_id || 'Unknown';
+
+        return (
+            <div
+                key={booking.id}
+                className={`rounded-lg border border-white/10 border-l-4 ${getServiceAccent(booking.service_type)} bg-dark-50/60 p-3`}
+            >
+                <div className="flex items-start gap-2">
+                    <UserIcon className="w-4 h-4 mt-0.5 flex-shrink-0 text-white/60" />
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white break-words">{customerName}</p>
+                        {vehicle && (
+                            <p className="text-xs text-white/60 break-words">{vehicle.make} {vehicle.model}</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="mt-2 flex items-center gap-2 text-xs text-white/70">
+                    <span className={`w-2.5 h-2.5 flex-shrink-0 rounded-full bg-gradient-to-br ${getServiceColor(booking.service_type)}`}></span>
+                    <span className="min-w-0 break-words">{booking.service_type} • {booking.duration}min</span>
+                </div>
+
+                {booking.notes && (
+                    <p className="mt-2 text-xs text-white/70 italic break-words border-t border-white/10 pt-2">
+                        "{booking.notes}"
+                    </p>
+                )}
+
+                {/* Status + delete (always visible so they work on touch screens too) */}
+                <div className="mt-3 flex items-center gap-2">
+                    <select
+                        value={booking.status}
+                        onChange={(e) => updateBookingStatus(booking, e.target.value as CarWashBooking['status'])}
+                        aria-label={`Status for ${customerName}`}
+                        className={`h-10 sm:h-9 min-w-0 flex-1 cursor-pointer rounded-lg border px-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 ${getStatusColor(booking.status)}`}
+                    >
+                        <option value="Scheduled" className="bg-dark-50 text-white">Scheduled</option>
+                        <option value="In Progress" className="bg-dark-50 text-white">In Progress</option>
+                        <option value="Completed" className="bg-dark-50 text-white">Completed</option>
+                        <option value="Cancelled" className="bg-dark-50 text-white">Cancelled</option>
+                    </select>
+                    <button
+                        type="button"
+                        onClick={() => deleteBooking(booking.id)}
+                        aria-label={`Delete booking for ${customerName}`}
+                        title="Delete booking"
+                        className="flex h-10 w-10 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors"
+                    >
+                        <TrashIcon className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
-                        <CarWashIcon className="h-8 w-8 mr-3 text-primary-500" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                        <CarWashIcon className="h-6 w-6 flex-shrink-0 text-primary-500" />
                         Car Wash Scheduling
                     </h1>
-                    <p className="text-white/60 mt-2">Schedule and manage car wash appointments</p>
+                    <p className="text-sm text-white/60 mt-1">Schedule and manage car wash appointments</p>
                 </div>
-                
+
                 {/* Date Navigation */}
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-2">
                     <button
+                        type="button"
                         onClick={() => handleDateChange(-1)}
-                        className="p-2 rounded-lg bg-dark-50/50 border border-primary-500/20 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300"
+                        aria-label="Previous day"
+                        className="flex h-11 w-11 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-lg bg-dark-50/50 border border-primary-500/20 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-colors"
                     >
                         <ChevronLeftIcon className="w-5 h-5" />
                     </button>
-                    
+
                     <input
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="form-input px-4 py-2 text-center min-w-[160px]"
+                        aria-label="Select date"
+                        className="form-input h-11 sm:h-10 min-w-0 flex-1 sm:flex-none sm:w-44 px-3 text-sm text-center [color-scheme:dark]"
                     />
-                    
+
                     <button
+                        type="button"
                         onClick={() => handleDateChange(1)}
-                        className="p-2 rounded-lg bg-dark-50/50 border border-primary-500/20 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300"
+                        aria-label="Next day"
+                        className="flex h-11 w-11 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-lg bg-dark-50/50 border border-primary-500/20 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-colors"
                     >
                         <ChevronRightIcon className="w-5 h-5" />
                     </button>
@@ -217,152 +316,62 @@ const CarWashScheduling = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                <div className="card-luxury p-6 border-l-4 border-primary-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Today's Bookings</p>
-                            <p className="text-2xl font-bold text-white">{bookingStats.todaysBookings}</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {statTiles.map(({ label, value, Icon, accent, valueColor, iconColor }) => (
+                    <div key={label} className={`card-luxury p-3 sm:p-4 border-l-4 ${accent}`}>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-xs uppercase tracking-wide text-white/60 whitespace-nowrap">{label}</p>
+                                <p className={`text-xl sm:text-2xl font-bold tabular-nums ${valueColor}`}>{value}</p>
+                            </div>
+                            <div className={`hidden sm:block p-2.5 rounded-xl flex-shrink-0 ${iconColor}`}>
+                                <Icon className="h-5 w-5" />
+                            </div>
                         </div>
-                        <CarWashIcon className="h-8 w-8 text-primary-500" />
                     </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-blue-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Scheduled</p>
-                            <p className="text-2xl font-bold text-blue-400">{bookingStats.scheduled}</p>
-                        </div>
-                        <div className="text-2xl">⏰</div>
-                    </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-yellow-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">In Progress</p>
-                            <p className="text-2xl font-bold text-yellow-400">{bookingStats.inProgress}</p>
-                        </div>
-                        <div className="text-2xl">🧽</div>
-                    </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-green-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Completed</p>
-                            <p className="text-2xl font-bold text-green-400">{bookingStats.completed}</p>
-                        </div>
-                        <div className="text-2xl">✨</div>
-                    </div>
-                </div>
+                ))}
             </div>
 
-            {/* Date Display */}
-            <div className="card-luxury p-4 sm:p-6">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                        <h3 className="text-base sm:text-xl md:text-2xl font-bold text-white truncate">{formatDate(selectedDate)}</h3>
-                        <p className="text-white/60 mt-1">
-                            {isToday ? 'Today' : isPast ? 'Past Date' : 'Future Date'} • 
-                            {bookingStats.todaysBookings} booking{bookingStats.todaysBookings !== 1 ? 's' : ''} scheduled
-                        </p>
-                    </div>
-                    
-                    {isToday && (
-                        <div className="flex items-center space-x-2 px-4 py-2 bg-primary-500/10 border border-primary-500/30 rounded-full">
-                            <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
-                            <span className="text-primary-500 text-sm font-medium">Live</span>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Time Slots Schedule */}
+            {/* Schedule: selected date + time slots */}
             <div className="card-luxury overflow-hidden">
-                <div className="p-6 border-b border-primary-500/10">
-                    <h3 className="text-xl font-bold text-white">Schedule Grid</h3>
-                    <p className="text-white/60">Click on empty slots to create new bookings</p>
+                <div className="p-4 sm:p-6 border-b border-primary-500/10">
+                    <h2 className="text-base sm:text-lg font-semibold text-white break-words">{formatDate(selectedDate)}</h2>
+                    <p className="text-sm text-white/60 mt-1">
+                        {isToday ? 'Today' : isPast ? 'Past Date' : 'Future Date'}
+                        {' • '}
+                        {bookingStats.todaysBookings === 0
+                            ? 'No bookings on this day. Click an available slot to create one.'
+                            : `${bookingStats.todaysBookings} booking${bookingStats.todaysBookings !== 1 ? 's' : ''} scheduled. Click an available slot to create a new booking.`}
+                    </p>
                 </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 p-3 sm:p-6">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 items-start gap-2 sm:gap-3 p-3 sm:p-6">
                     {timeSlots.map(timeSlot => {
-                        const booking = getBookingForSlot(timeSlot);
-                        const customer = booking ? state.customers.find(c => c.id === booking.customer_id) : null;
-                        const vehicle = booking ? state.vehicles.find(v => v.id === booking.vehicle_id) : null;
+                        const bookings = getBookingsForSlot(timeSlot);
 
                         return (
-                            <div key={timeSlot} className="min-h-[120px] rounded-lg border border-primary-500/10 p-3 hover:border-primary-500/30 transition-all duration-300">
-                                {/* Time Header */}
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center space-x-2">
-                                        <ClockIcon className="w-4 h-4 text-primary-500" />
-                                        <span className="font-semibold text-white text-sm">{timeSlot}</span>
-                                    </div>
-                                    {booking && (
-                                        <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}>
-                                            {booking.status}
-                                        </div>
-                                    )}
+                            <div key={timeSlot} className="flex items-start gap-3 rounded-lg border border-primary-500/10 p-2.5 sm:p-3 hover:border-primary-500/30 transition-colors">
+                                {/* Time */}
+                                <div className="flex h-10 w-[4.5rem] flex-shrink-0 items-center gap-1.5">
+                                    <ClockIcon className="w-4 h-4 flex-shrink-0 text-primary-500" />
+                                    <span className="text-sm font-semibold text-white tabular-nums">{timeSlot}</span>
                                 </div>
 
-                                {booking ? (
-                                    <div className={`bg-gradient-to-br ${getServiceColor(booking.service_type)} p-3 rounded-lg text-white relative group`}>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center space-x-2">
-                                                <UserIcon className="w-4 h-4" />
-                                                <span className="font-semibold text-sm truncate">
-                                                    {customer?.name || 'Unknown'}
-                                                </span>
-                                            </div>
-                                            <div className="text-xs opacity-90">
-                                                {vehicle?.make} {vehicle?.model}
-                                            </div>
-                                            <div className="text-xs opacity-80">
-                                                {booking.service_type} • {booking.duration}min
-                                            </div>
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-center justify-center space-x-2">
-                                            <select
-                                                value={booking.status}
-                                                onChange={(e) => updateBookingStatus(booking, e.target.value as CarWashBooking['status'])}
-                                                className="text-xs bg-white text-black border rounded px-2 py-1"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <option value="Scheduled">Scheduled</option>
-                                                <option value="In Progress">In Progress</option>
-                                                <option value="Completed">Completed</option>
-                                                <option value="Cancelled">Cancelled</option>
-                                            </select>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    deleteBooking(booking.id);
-                                                }}
-                                                className="text-white hover:text-red-300 p-1 bg-red-500/20 rounded"
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        {booking.notes && (
-                                            <div className="mt-2 text-xs opacity-80 italic border-t border-white/20 pt-2">
-                                                "{booking.notes}"
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => openBookingModal(timeSlot)}
-                                        className="w-full h-20 flex flex-col items-center justify-center text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg border-2 border-dashed border-primary-500/20 hover:border-primary-500/40 transition-all duration-300 group"
-                                    >
-                                        <PlusIcon className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" />
-                                        <span className="text-xs font-medium">Available</span>
-                                    </button>
-                                )}
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    {bookings.length > 0 ? (
+                                        bookings.map(renderBooking)
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => openBookingModal(timeSlot)}
+                                            aria-label={`Book car wash at ${timeSlot}`}
+                                            className="flex h-11 sm:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary-500/20 text-xs font-medium text-primary-500/70 hover:text-primary-500 hover:bg-primary-500/10 hover:border-primary-500/40 transition-colors"
+                                        >
+                                            <PlusIcon className="w-4 h-4" />
+                                            Available
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}
@@ -370,9 +379,9 @@ const CarWashScheduling = () => {
             </div>
 
             {/* Service Type Legend */}
-            <div className="card-luxury p-6">
-                <h4 className="text-lg font-bold text-white mb-4">Service Types</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="card-luxury p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-semibold text-white mb-4">Service Types</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
                     {[
                         { type: 'Basic Wash', color: 'from-blue-500 to-blue-600', price: '₹500', duration: '30min' },
                         { type: 'Premium Wash', color: 'from-purple-500 to-purple-600', price: '₹800', duration: '45min' },
@@ -380,10 +389,10 @@ const CarWashScheduling = () => {
                         { type: 'Interior Only', color: 'from-orange-500 to-orange-600', price: '₹600', duration: '1hr' },
                         { type: 'Exterior Only', color: 'from-red-500 to-red-600', price: '₹400', duration: '30min' }
                     ].map((service) => (
-                        <div key={service.type} className="flex items-center space-x-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                            <div className={`w-4 h-4 bg-gradient-to-br ${service.color} rounded-full`}></div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-white">{service.type}</p>
+                        <div key={service.type} className="flex items-center gap-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
+                            <div className={`w-3 h-3 flex-shrink-0 bg-gradient-to-br ${service.color} rounded-full`}></div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-white break-words">{service.type}</p>
                                 <p className="text-xs text-white/60">{service.price} • {service.duration}</p>
                             </div>
                         </div>
@@ -393,16 +402,18 @@ const CarWashScheduling = () => {
 
             {/* Booking Modal */}
             <Modal title={`Book Car Wash - ${selectedTimeSlot}`} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <form onSubmit={handleBookingSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">
+                <form onSubmit={handleBookingSubmit} className="space-y-4">
+                    <p className="text-sm text-white/60">{formatDate(selectedDate)} at {selectedTimeSlot}</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="min-w-0">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">
                                 Registered Customer
                             </label>
                             <select
                                 value={newBooking.customer_id}
                                 onChange={(e) => setNewBooking({ ...newBooking, customer_id: e.target.value, vehicle_id: '', walk_in_name: '' })}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full px-3 py-2.5 text-sm"
                             >
                                 <option value="">— Select or use Walk-in below —</option>
                                 {state.customers.map(c => (
@@ -411,28 +422,28 @@ const CarWashScheduling = () => {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">
-                                Walk-in Name <span className="text-white/40 text-xs">(if not registered)</span>
+                        <div className="min-w-0">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">
+                                Walk-in Name <span className="text-white/50 text-xs">(if not registered)</span>
                             </label>
                             <input
                                 type="text"
                                 value={newBooking.walk_in_name}
                                 onChange={(e) => setNewBooking({ ...newBooking, walk_in_name: e.target.value, customer_id: '' })}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full px-3 py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 placeholder="e.g. Rahul Kumar"
                                 disabled={!!newBooking.customer_id}
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">
-                                Vehicle <span className="text-white/40 text-xs">(optional)</span>
+                        <div className="min-w-0">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">
+                                Vehicle <span className="text-white/50 text-xs">(optional)</span>
                             </label>
                             <select
                                 value={newBooking.vehicle_id}
                                 onChange={(e) => setNewBooking({ ...newBooking, vehicle_id: e.target.value })}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full px-3 py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={!newBooking.customer_id}
                             >
                                 <option value="">— No vehicle / not linked —</option>
@@ -444,12 +455,12 @@ const CarWashScheduling = () => {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Service Type *</label>
+                        <div className="min-w-0">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Service Type *</label>
                             <select
                                 value={newBooking.service_type}
                                 onChange={(e) => setNewBooking({ ...newBooking, service_type: e.target.value as CarWashBooking['service_type'] })}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full px-3 py-2.5 text-sm"
                                 required
                             >
                                 <option value="Basic Wash">Basic Wash (₹500)</option>
@@ -460,13 +471,13 @@ const CarWashScheduling = () => {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Duration (minutes) *</label>
+                        <div className="min-w-0">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Duration (minutes) *</label>
                             <input
                                 type="number"
                                 value={newBooking.duration}
                                 onChange={(e) => setNewBooking({ ...newBooking, duration: Number(e.target.value) })}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full px-3 py-2.5 text-sm"
                                 min="15"
                                 max="180"
                                 step="15"
@@ -474,28 +485,28 @@ const CarWashScheduling = () => {
                             />
                         </div>
 
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-white/80 mb-2">Special Instructions</label>
+                        <div className="min-w-0 sm:col-span-2">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Special Instructions</label>
                             <textarea
                                 value={newBooking.notes}
                                 onChange={(e) => setNewBooking({ ...newBooking, notes: e.target.value })}
-                                className="form-input w-full px-4 py-3 h-20 resize-none"
+                                className="form-input w-full px-3 py-2.5 text-sm h-20 resize-none"
                                 placeholder="Any special requests or notes..."
                             />
                         </div>
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-6">
-                        <button 
-                            type="button" 
-                            onClick={() => setIsModalOpen(false)} 
-                            className="btn-secondary px-6 py-3 rounded-xl"
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(false)}
+                            className="btn-secondary px-6 py-2.5 rounded-xl"
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
-                            className="btn-luxury px-6 py-3 rounded-xl"
+                        <button
+                            type="submit"
+                            className="btn-luxury px-6 py-2.5 rounded-xl"
                         >
                             Book Appointment
                         </button>

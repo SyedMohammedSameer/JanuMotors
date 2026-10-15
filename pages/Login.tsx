@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { WrenchScrewdriverIcon } from '../components/Icons';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../supabaseClient';
@@ -24,8 +24,20 @@ const Login: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const { dispatch } = useAppContext();
+    const { state, dispatch } = useAppContext();
     const navigate = useNavigate();
+
+    // Decorative particles: positions are generated once so they don't jump around on every keystroke.
+    const particles = useMemo(
+        () =>
+            Array.from({ length: 14 }, () => ({
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${3 + Math.random() * 4}s`,
+            })),
+        []
+    );
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,73 +62,67 @@ const Login: React.FC = () => {
         navigate('/', { replace: true });
     };
 
+    // Already signed in (e.g. page refresh restored the session): skip the form.
+    if (state.isAuthenticated) {
+        return <Navigate to="/" replace />;
+    }
+
     return (
-        <div className="min-h-screen bg-gradient-luxury flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Background Particles */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {[...Array(20)].map((_, i) => (
+        <div className="min-h-screen bg-gradient-luxury flex items-center justify-center px-4 py-8 sm:p-6 relative overflow-hidden">
+            {/* Background Particles (decorative, never intercept clicks) */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+                {particles.map((style, i) => (
                     <div
                         key={i}
-                        className="absolute w-1 h-1 bg-primary-500/20 rounded-full animate-float"
-                        style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
-                            animationDelay: `${Math.random() * 5}s`,
-                            animationDuration: `${3 + Math.random() * 4}s`
-                        }}
+                        className="absolute w-1 h-1 bg-primary-500/20 rounded-full animate-float motion-reduce:animate-none"
+                        style={style}
                     ></div>
                 ))}
             </div>
 
             {/* Main Content */}
             <div className="w-full max-w-md relative z-10">
-                <div className="card-luxury p-8 space-y-8 animate-slide-up">
+                <div className="card-luxury p-4 min-[360px]:p-5 sm:p-8 space-y-6 sm:space-y-8 animate-slide-up">
                     {/* Header */}
-                    <div className="text-center space-y-4">
-                        <div className="relative mx-auto w-20 h-20 mb-6">
-                            <div className="absolute inset-0 bg-gradient-gold rounded-full animate-pulse-gold"></div>
-                            <div className="relative z-10 w-full h-full bg-gradient-luxury rounded-full flex items-center justify-center border-2 border-primary-500/30">
-                                <img src="/assets/logo.png" alt="JANU MOTORS" className="h-12 w-12 icon-glow animate-pulse-gold" />
-                            </div>
+                    <div className="text-center space-y-3">
+                        <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-gradient-luxury border-2 border-primary-500/40 shadow-gold">
+                            <img src="/assets/logo.png" alt="JANU MOTORS" className="h-full w-full object-cover" />
                         </div>
-                        
-                        <div className="space-y-2">
-                            <h1 className="text-3xl font-bold text-gradient">JANU MOTORS</h1>
-                            <p className="text-primary-500/80 font-medium tracking-wider text-sm uppercase">Premium Garage Management</p>
-                        </div>
-                        
+
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold text-white">Welcome Back</h2>
-                            <p className="text-white/60">Sign in to access your garage management system</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gradient">JANU MOTORS</h1>
+                            <p className="text-primary-500/80 font-medium tracking-wider text-xs uppercase">Premium Garage Management</p>
+                        </div>
+
+                        <div className="space-y-1 pt-2">
+                            <h2 className="text-lg sm:text-xl font-semibold text-white">Welcome Back</h2>
+                            <p className="text-sm text-white/60">Sign in to access your garage management system</p>
                         </div>
                     </div>
 
                     {/* Login Form */}
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+                    <form className="space-y-5" onSubmit={handleSubmit}>
                         {/* Email Field */}
-                        <div className="space-y-2">
-                            <label htmlFor="email" className="block text-sm font-medium text-white/80">
+                        <div>
+                            <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-1.5">
                                 Email Address
                             </label>
-                            <div className="relative">
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="form-input w-full px-4 py-3 text-white placeholder-white/50 focus:ring-2 focus:ring-primary-500/50 transition-all duration-300"
-                                    placeholder="admin@janumotor.com"
-                                />
-                                <div className="absolute inset-0 rounded-lg bg-primary-500/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                            </div>
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                autoComplete="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="form-input w-full px-4 py-3 text-white placeholder-white/50 focus:ring-2 focus:ring-primary-500/50 transition-all duration-300"
+                                placeholder="admin@janumotor.com"
+                            />
                         </div>
 
                         {/* Password Field */}
-                        <div className="space-y-2">
-                            <label htmlFor="password" className="block text-sm font-medium text-white/80">
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-1.5">
                                 Password
                             </label>
                             <div className="relative">
@@ -134,7 +140,9 @@ const Login: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary-500/60 hover:text-primary-500 transition-colors duration-300"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    aria-pressed={showPassword}
+                                    className="absolute inset-y-0 right-0 w-12 flex items-center justify-center rounded-r-lg text-primary-500/60 hover:text-primary-500 focus:outline-none focus-visible:text-primary-500 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/50 transition-colors duration-300"
                                 >
                                     {showPassword ? (
                                         <EyeSlashIcon className="h-5 w-5" />
@@ -142,59 +150,60 @@ const Login: React.FC = () => {
                                         <EyeIcon className="h-5 w-5" />
                                     )}
                                 </button>
-                                <div className="absolute inset-0 rounded-lg bg-primary-500/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                             </div>
                         </div>
 
                         {/* Remember Me & Forgot Password */}
-                        <div className="flex items-center justify-between">
-                            <label className="flex items-center space-x-2 cursor-pointer">
+                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                            <label className="flex items-center gap-2 cursor-pointer min-h-[44px] sm:min-h-0">
                                 <input
                                     type="checkbox"
-                                    className="w-4 h-4 text-primary-500 bg-dark-50 border-primary-500/30 rounded focus:ring-primary-500/50 focus:ring-2"
+                                    className="w-4 h-4 flex-shrink-0 accent-primary-500 bg-dark-50 border-primary-500/30 rounded focus:ring-primary-500/50 focus:ring-2"
                                 />
-                                <span className="text-sm text-white/70">Remember me</span>
+                                <span className="text-sm text-white/70 whitespace-nowrap">Remember me</span>
                             </label>
                             <button
                                 type="button"
-                                className="text-sm text-primary-500 hover:text-primary-400 transition-colors duration-300"
+                                className="text-sm text-primary-500 hover:text-primary-400 whitespace-nowrap min-h-[44px] sm:min-h-0 transition-colors duration-300"
                             >
                                 Forgot password?
                             </button>
                         </div>
 
+                        {/* Error Message (kept next to the button so it is visible on short screens) */}
+                        {error && (
+                            <div role="alert" className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                                <p className="text-sm text-red-400 text-center break-words">{error}</p>
+                            </div>
+                        )}
+
                         {/* Submit Button */}
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="btn-luxury w-full py-3 text-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
+                            aria-busy={isLoading}
+                            aria-label={isLoading ? 'Signing in' : undefined}
+                            className="btn-luxury w-full h-12 px-4 rounded-lg text-base font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
                         >
                             {isLoading ? (
-                                <div className="flex items-center justify-center space-x-2">
-                                    <div className="loading-dot w-2 h-2 bg-black rounded-full"></div>
-                                    <div className="loading-dot w-2 h-2 bg-black rounded-full"></div>
-                                    <div className="loading-dot w-2 h-2 bg-black rounded-full"></div>
-                                </div>
+                                <span className="flex items-center justify-center gap-2">
+                                    <span className="loading-dot w-2 h-2 bg-black rounded-full"></span>
+                                    <span className="loading-dot w-2 h-2 bg-black rounded-full"></span>
+                                    <span className="loading-dot w-2 h-2 bg-black rounded-full"></span>
+                                </span>
                             ) : (
                                 'Sign In'
                             )}
                         </button>
                     </form>
-
-                    {/* Error Message */}
-                    {error && (
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
-                            <p className="text-sm text-red-400 text-center">{error}</p>
-                        </div>
-                    )}
                 </div>
 
                 {/* Footer */}
-                <div className="text-center mt-8 space-y-2">
-                    <p className="text-white/40 text-sm">© 2025 JANU MOTORS. All rights reserved.</p>
-                    <div className="flex items-center justify-center space-x-1">
-                        <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
-                        <p className="text-xs text-primary-500/60">Secure & Encrypted</p>
+                <div className="text-center mt-6 sm:mt-8 space-y-2">
+                    <p className="text-white/50 text-xs sm:text-sm">© {new Date().getFullYear()} JANU MOTORS. All rights reserved.</p>
+                    <div className="flex items-center justify-center gap-1.5">
+                        <div className="w-1.5 h-1.5 flex-shrink-0 bg-primary-500 rounded-full"></div>
+                        <p className="text-xs text-white/50">Secure & Encrypted</p>
                     </div>
                 </div>
             </div>

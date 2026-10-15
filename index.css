@@ -58,7 +58,6 @@ body {
 }
 
 .btn-luxury:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
   background: linear-gradient(135deg, #FFEB3B 0%, #FFD700 100%);
 }
@@ -74,7 +73,6 @@ body {
 .btn-secondary:hover {
   background: rgba(255, 215, 0, 0.1);
   border-color: #FFD700;
-  transform: translateY(-1px);
 }
 
 /* Modern Card Styles */
@@ -88,7 +86,7 @@ body {
 }
 
 .card-luxury:hover {
-  transform: translateY(-5px);
+  /* No lift on hover: cards are also used as large content panels, where jumping up looks broken. */
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.1);
   border-color: rgba(255, 215, 0, 0.3);
 }
@@ -218,7 +216,7 @@ textarea:focus {
     color: black !important;
   }
   
-  .print\\:hidden {
+  .print\:hidden {
     display: none !important;
   }
   
@@ -323,4 +321,23 @@ textarea:focus {
 /* Smooth Page Transitions */
 .page-transition {
   animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Thin scrollbar used inside modals */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(26, 26, 26, 0.3);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FFD700, #FFC107);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #FFEB3B, #FFD700);
 }

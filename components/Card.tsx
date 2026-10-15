@@ -31,7 +31,7 @@ const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`card-luxury p-4 sm:p-5 lg:p-6 transition-all duration-300 group ${cardClasses}`}
+      className={`card-luxury relative min-w-0 p-4 sm:p-5 transition-all duration-300 group ${cardClasses}`}
       onClick={onClick}
     >
       {/* Background Gradient Overlay */}
@@ -43,16 +43,16 @@ const Card: React.FC<CardProps> = ({
       
       <div className="relative z-10">
         {/* Header with Icon */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between gap-2 mb-4">
           <div className={`
-            p-4 rounded-2xl transition-all duration-300 group-hover:scale-110
+            p-3 flex-shrink-0 rounded-2xl transition-all duration-300 group-hover:scale-110
             ${gradient 
               ? 'bg-gradient-gold shadow-gold' 
               : 'bg-primary-500/10 border border-primary-500/20'
             }
           `}>
             <div className={`
-              w-8 h-8 transition-colors duration-300
+              w-6 h-6 transition-colors duration-300
               ${gradient ? 'text-black' : 'text-primary-500 group-hover:text-primary-400'}
             `}>
               {icon}
@@ -62,7 +62,7 @@ const Card: React.FC<CardProps> = ({
           {/* Change Indicator */}
           {change && (
             <div className={`
-              flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-semibold
+              flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap
               ${changeType === 'positive' ? 'bg-green-500/10 text-green-400' : 
                 changeType === 'negative' ? 'bg-red-500/10 text-red-400' : 
                 'bg-primary-500/10 text-primary-500'}
@@ -87,8 +87,8 @@ const Card: React.FC<CardProps> = ({
         </div>
 
         {/* Title */}
-        <div className="mb-3">
-          <h3 className="text-sm font-medium text-white/70 uppercase tracking-wider leading-none">
+        <div className="mb-2">
+          <h3 className="text-xs font-medium text-white/70 uppercase tracking-wide leading-snug">
             {title}
           </h3>
         </div>
@@ -96,7 +96,7 @@ const Card: React.FC<CardProps> = ({
         {/* Value */}
         <div className="mb-2">
           <p className={`
-            text-xl sm:text-2xl lg:text-3xl font-bold transition-all duration-300
+            text-xl sm:text-2xl font-bold leading-tight break-words transition-all duration-300
             ${gradient
               ? 'text-gradient'
               : 'text-white group-hover:text-primary-400'
@@ -108,7 +108,7 @@ const Card: React.FC<CardProps> = ({
 
         {/* Additional Info */}
         {change && (
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center justify-between gap-2 text-xs">
             <span className={`${changeColor} font-medium`}>
               {change} vs last month
             </span>

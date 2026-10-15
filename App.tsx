@@ -1,5 +1,5 @@
-import React from 'react';
-import { createHashRouter, RouterProvider, Outlet, Navigate } from 'react-router-dom';
+import React, { useCallback, useState } from 'react';
+import { createHashRouter, RouterProvider, Outlet, Navigate, ScrollRestoration } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
@@ -165,7 +165,7 @@ const ErrorBanner = () => {
     if (!state.error) return null;
 
     return (
-        <div className="mx-6 mb-6 card-luxury border-l-4 border-accent p-4 animate-slide-up">
+        <div role="alert" className="mb-4 sm:mb-6 card-luxury border-l-4 border-accent p-4 animate-slide-up">
             <div className="flex justify-between items-start">
                 <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 mt-1">
@@ -175,13 +175,14 @@ const ErrorBanner = () => {
                             </svg>
                         </div>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h4 className="text-sm font-semibold text-white mb-1">System Error</h4>
-                        <p className="text-sm text-white/80 leading-relaxed">{state.error}</p>
+                        <p className="text-sm text-white/80 leading-relaxed break-words">{state.error}</p>
                     </div>
                 </div>
                 <button
                     onClick={clearError}
+                    aria-label="Dismiss error"
                     className="flex-shrink-0 ml-4 p-2 text-accent/60 hover:text-accent hover:bg-accent/10 rounded-lg transition-all duration-300"
                 >
                     <XMarkIcon className="h-5 w-5" />
@@ -193,6 +194,9 @@ const ErrorBanner = () => {
 
 const AppLayout = () => {
   const { state } = useAppContext();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const openMobileNav = useCallback(() => setMobileNavOpen(true), []);
+  const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
   
   if (!state.isConfigured) {
     return <ConfigurationNeededScreen />;
@@ -204,10 +208,13 @@ const AppLayout = () => {
   
   return (
     <div className="flex min-h-screen bg-gradient-luxury">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header />
-        <main className="flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-x-hidden">
+      {/* New page => scroll to top; back/forward => restore the previous position */}
+      <ScrollRestoration />
+      <Sidebar mobileOpen={mobileNavOpen} onMobileClose={closeMobileNav} />
+      {/* overflow-x-clip (not hidden) so the sticky header still sticks to the viewport */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-clip">
+        <Header onMenuClick={openMobileNav} />
+        <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-x-clip">
           <div className="page-transition">
             <ErrorBanner />
             <Outlet />
@@ -223,6 +230,11 @@ const ProtectedRoute = () => {
   
   if (!state.isConfigured) {
     return <AppLayout />;
+  }
+
+  // Wait for the saved-session check to finish; otherwise a page refresh bounces a signed-in user to /login.
+  if (state.loading) {
+    return <LoadingSpinner />;
   }
   
   if (!state.isAuthenticated) {

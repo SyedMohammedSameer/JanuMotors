@@ -105,38 +105,38 @@ const JobCardDetail = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header Card */}
-            <div className="card-luxury p-6">
-                <div className="flex justify-between items-start">
-                    <div className="flex items-center space-x-4">
-                        <div className="p-4 bg-gradient-gold rounded-2xl">
-                            <ClipboardDocumentListIcon className="h-8 w-8 text-black" />
+            <div className="card-luxury p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                        <div className="p-2.5 bg-gradient-gold rounded-xl flex-shrink-0">
+                            <ClipboardDocumentListIcon className="h-6 w-6 text-black" />
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-white">Job Card #{jobCard.id}</h2>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-white/60">
-                                <div className="flex items-center space-x-1">
-                                    <CalendarIcon className="w-4 h-4" />
+                        <div className="min-w-0">
+                            <h2 className="text-xl sm:text-2xl font-bold text-white break-words">Job Card #{jobCard.id}</h2>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm text-white/60">
+                                <div className="flex items-center gap-1.5">
+                                    <CalendarIcon className="w-4 h-4 flex-shrink-0" />
                                     <span>Created: {new Date(jobCard.created_at).toLocaleDateString()}</span>
                                 </div>
                                 {jobCard.completed_date && (
-                                    <div className="flex items-center space-x-1">
-                                        <ClockIcon className="w-4 h-4" />
+                                    <div className="flex items-center gap-1.5">
+                                        <ClockIcon className="w-4 h-4 flex-shrink-0" />
                                         <span>Completed: {new Date(jobCard.completed_date).toLocaleDateString()}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col items-end space-y-3">
-                        <div className={`flex items-center space-x-2 px-4 py-2 rounded-full border text-sm font-semibold ${getStatusColor(jobCard.status)}`}>
+                    <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
+                        <div className={`inline-flex items-center gap-2 px-4 h-10 rounded-full border text-sm font-semibold whitespace-nowrap ${getStatusColor(jobCard.status)}`}>
                             <span>{getStatusIcon(jobCard.status)}</span>
                             <span>{jobCard.status}</span>
                         </div>
                         <button 
                             onClick={handleEditOpen}
-                            className="px-4 py-2 rounded-lg bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 transition-colors flex items-center space-x-2"
+                            className="inline-flex items-center justify-center gap-2 px-4 h-11 sm:h-10 rounded-lg border border-primary-500/20 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 text-sm font-medium whitespace-nowrap transition-colors"
                         >
                             <PencilIcon className="w-4 h-4" />
                             <span>Edit</span>
@@ -145,27 +145,27 @@ const JobCardDetail = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 items-start">
                 {/* Main Content */}
-                <div className="xl:col-span-2 space-y-8">
+                <div className="xl:col-span-2 space-y-4 sm:space-y-6 min-w-0">
                     {/* Job Details */}
-                    <div className="card-luxury p-6">
-                        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                            <WrenchScrewdriverIcon className="h-6 w-6 mr-3 text-primary-500"/>
+                    <div className="card-luxury p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <WrenchScrewdriverIcon className="h-5 w-5 text-primary-500 flex-shrink-0"/>
                             Job Details
                         </h3>
-                        <div className="p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 mb-6">
-                            <p className="text-white whitespace-pre-wrap leading-relaxed">{jobCard.description}</p>
+                        <div className="p-3 sm:p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 mb-4">
+                            <p className="text-sm sm:text-base text-white whitespace-pre-wrap break-words leading-relaxed">{jobCard.description}</p>
                         </div>
                         
                         {/* Status Update */}
-                        <div className="space-y-2">
-                            <label htmlFor="status" className="block text-sm font-medium text-white/80">Update Status</label>
+                        <div>
+                            <label htmlFor="status" className="block text-sm font-medium text-white/80 mb-1.5">Update Status</label>
                             <select
                                 id="status"
                                 value={jobCard.status}
                                 onChange={handleStatusChange}
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full sm:max-w-xs px-4 py-2.5"
                             >
                                 {Object.values(JobStatus).map(status => (
                                     <option key={status} value={status}>{status}</option>
@@ -176,20 +176,20 @@ const JobCardDetail = () => {
 
                     {/* Parts Used */}
                     {jobCard.parts_used.length > 0 && (
-                        <div className="card-luxury p-6">
-                            <h3 className="text-xl font-bold text-white mb-4">Parts Used</h3>
+                        <div className="card-luxury p-4 sm:p-6">
+                            <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Parts Used</h3>
                             <div className="space-y-3">
                                 {jobCard.parts_used.map((part, index) => {
                                     const inventoryItem = state.inventory.find(i => i.id === part.itemId);
                                     return (
-                                        <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                                            <div>
-                                                <p className="font-medium text-white">{inventoryItem?.name || 'Unknown Part'}</p>
-                                                <p className="text-sm text-white/60">SKU: {inventoryItem?.sku}</p>
+                                        <div key={index} className="flex items-start justify-between gap-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm sm:text-base font-medium text-white break-words">{inventoryItem?.name || 'Unknown Part'}</p>
+                                                <p className="text-xs sm:text-sm text-white/60 break-all">SKU: {inventoryItem?.sku || '—'}</p>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-bold text-primary-400">Qty: {part.quantity}</p>
-                                                <p className="text-sm text-white/60">₹{((inventoryItem?.price || 0) * part.quantity).toFixed(2)}</p>
+                                            <div className="text-right flex-shrink-0">
+                                                <p className="text-sm sm:text-base font-bold text-primary-400 whitespace-nowrap tabular-nums">Qty: {part.quantity}</p>
+                                                <p className="text-xs sm:text-sm text-white/60 whitespace-nowrap tabular-nums">₹{((inventoryItem?.price || 0) * part.quantity).toFixed(2)}</p>
                                             </div>
                                         </div>
                                     );
@@ -199,110 +199,101 @@ const JobCardDetail = () => {
                     )}
 
                     {/* Labor Information */}
-                    <div className="card-luxury p-6">
-                        <h3 className="text-xl font-bold text-white mb-4">Labor Information</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 text-center">
-                                <p className="text-sm text-white/70">Hours Worked</p>
-                                <p className="text-2xl font-bold text-primary-400">{jobCard.labor_hours}h</p>
+                    <div className="card-luxury p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Labor Information</h3>
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            <div className="p-3 sm:p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 text-center min-w-0">
+                                <p className="text-xs uppercase tracking-wide text-white/60">Hours Worked</p>
+                                <p className="mt-1 text-xl sm:text-2xl font-bold text-primary-400 tabular-nums break-words">{jobCard.labor_hours}h</p>
                             </div>
-                            <div className="p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 text-center">
-                                <p className="text-sm text-white/70">Estimated Cost</p>
-                                <p className="text-2xl font-bold text-primary-400">₹{(jobCard.labor_hours * 500).toFixed(2)}</p>
+                            <div className="p-3 sm:p-4 rounded-lg bg-dark-50/30 border border-primary-500/10 text-center min-w-0">
+                                <p className="text-xs uppercase tracking-wide text-white/60">Estimated Cost</p>
+                                <p className="mt-1 text-xl sm:text-2xl font-bold text-primary-400 tabular-nums break-words">₹{(jobCard.labor_hours * 500).toFixed(2)}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Sidebar */}
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4 sm:gap-6 min-w-0">
                     {/* Customer Card */}
-                    <div className="card-luxury p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                            <UsersIcon className="h-5 w-5 mr-2 text-primary-500" />
+                    <div className="card-luxury p-4 sm:p-6 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <UsersIcon className="h-5 w-5 text-primary-500 flex-shrink-0" />
                             Customer
                         </h3>
                         {customer ? (
                             <Link to={`/customers/${customer.id}`} className="group block">
-                                <div className="flex items-center space-x-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10 group-hover:border-primary-500/30 transition-all duration-300">
-                                    <div className="w-12 h-12 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black">
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10 group-hover:border-primary-500/30 transition-colors">
+                                    <div className="w-10 h-10 flex-shrink-0 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black">
                                         {customer.name.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-white group-hover:text-primary-400 transition-colors">{customer.name}</p>
-                                        <p className="text-sm text-white/60">{customer.phone}</p>
-                                        <p className="text-sm text-white/60">{customer.email}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-white break-words group-hover:text-primary-400 transition-colors">{customer.name}</p>
+                                        <p className="text-sm text-white/60 break-words">{customer.phone}</p>
+                                        <p className="text-sm text-white/60 break-all">{customer.email}</p>
                                     </div>
                                 </div>
                             </Link>
                         ) : (
-                            <p className="text-white/60">No customer assigned</p>
+                            <p className="text-sm text-white/60">No customer assigned</p>
                         )}
                     </div>
 
                     {/* Vehicle Card */}
-                    <div className="card-luxury p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                            <TruckIcon className="h-5 w-5 mr-2 text-primary-500" />
+                    <div className="card-luxury p-4 sm:p-6 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <TruckIcon className="h-5 w-5 text-primary-500 flex-shrink-0" />
                             Vehicle
                         </h3>
                         {vehicle ? (
                             <div className="p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center">
-                                        <TruckIcon className="w-5 h-5 text-primary-500" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-white">{vehicle.year} {vehicle.make} {vehicle.model}</p>
-                                        <p className="text-sm text-white/60">Plate: {vehicle.license_plate}</p>
-                                        {vehicle.vin && <p className="text-sm text-white/60">VIN: {vehicle.vin}</p>}
-                                    </div>
-                                </div>
+                                <p className="font-bold text-white break-words">{vehicle.year} {vehicle.make} {vehicle.model}</p>
+                                <p className="text-sm text-white/60 break-words">Plate: {vehicle.license_plate}</p>
+                                {vehicle.vin && <p className="text-sm text-white/60 break-all">VIN: {vehicle.vin}</p>}
                             </div>
                         ) : (
-                            <p className="text-white/60">No vehicle assigned</p>
+                            <p className="text-sm text-white/60">No vehicle assigned</p>
                         )}
                     </div>
 
                     {/* Assigned Worker Card */}
-                    <div className="card-luxury p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                            <UserCircleIcon className="h-5 w-5 mr-2 text-primary-500" />
+                    <div className="card-luxury p-4 sm:p-6 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <UserCircleIcon className="h-5 w-5 text-primary-500 flex-shrink-0" />
                             Assigned Mechanic
                         </h3>
                         {worker ? (
-                            <div className="p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black">
-                                        {worker.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-white">{worker.name}</p>
-                                        <p className="text-sm text-primary-500">{worker.role}</p>
-                                    </div>
+                            <div className="flex items-start gap-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
+                                <div className="w-10 h-10 flex-shrink-0 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black">
+                                    {worker.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-white break-words">{worker.name}</p>
+                                    <p className="text-sm text-primary-500 break-words">{worker.role}</p>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-white/60">No worker assigned</p>
+                            <p className="text-sm text-white/60">No worker assigned</p>
                         )}
                     </div>
 
                     {/* Progress Indicator */}
-                    <div className="card-luxury p-6">
-                        <h3 className="text-lg font-bold text-white mb-4">Progress</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-white/70">Completion</span>
-                                <span className="font-semibold text-white">
-                                    {jobCard.status === JobStatus.PENDING && '0%'}
-                                    {jobCard.status === JobStatus.IN_PROGRESS && '50%'}
-                                    {jobCard.status === JobStatus.COMPLETED && '100%'}
+                    <div className="card-luxury p-4 sm:p-6 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Progress</h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-3 text-sm">
+                                <span className="text-white/70">Stage</span>
+                                <span className="font-semibold text-white whitespace-nowrap">
+                                    {jobCard.status === JobStatus.PENDING && 'Not started'}
+                                    {jobCard.status === JobStatus.IN_PROGRESS && 'In progress'}
+                                    {jobCard.status === JobStatus.COMPLETED && 'Completed'}
                                     {jobCard.status === JobStatus.CANCELLED && 'Cancelled'}
                                 </span>
                             </div>
-                            <div className="w-full bg-dark-100/50 rounded-full h-3">
+                            <div className="w-full bg-dark-100/50 rounded-full h-2.5 overflow-hidden">
                                 <div 
-                                    className={`h-3 rounded-full transition-all duration-500 ${
+                                    className={`h-2.5 rounded-full transition-all duration-500 ${
                                         jobCard.status === JobStatus.PENDING ? 'w-0 bg-yellow-500' :
                                         jobCard.status === JobStatus.IN_PROGRESS ? 'w-1/2 bg-blue-500' :
                                         jobCard.status === JobStatus.COMPLETED ? 'w-full bg-green-500' :
@@ -317,38 +308,40 @@ const JobCardDetail = () => {
 
             <Modal title="Edit Job Card Details" isOpen={isEditOpen} onClose={() => setIsEditOpen(false)}>
                 {editData && (
-                    <form onSubmit={handleEditSave} className="space-y-6">
+                    <form onSubmit={handleEditSave} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Job Description *</label>
+                            <label htmlFor="jc-edit-description" className="block text-sm font-medium text-white/80 mb-1.5">Job Description *</label>
                             <textarea 
+                                id="jc-edit-description"
                                 value={editData.description || ''} 
                                 onChange={e => setEditData({...editData, description: e.target.value})} 
-                                className="form-input w-full px-4 py-3 h-32 resize-none" 
+                                className="form-input w-full px-4 py-2.5 h-36 resize-y" 
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Labor Hours</label>
+                            <label htmlFor="jc-edit-hours" className="block text-sm font-medium text-white/80 mb-1.5">Labor Hours</label>
                             <input 
+                                id="jc-edit-hours"
                                 type="number" 
                                 step="0.5"
                                 min="0"
                                 value={editData.labor_hours || 0} 
                                 onChange={e => setEditData({...editData, labor_hours: Number(e.target.value)})} 
-                                className="form-input w-full px-4 py-3"
+                                className="form-input w-full px-4 py-2.5"
                             />
                         </div>
-                        <div className="flex justify-end space-x-4 pt-6">
+                        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
                             <button 
                                 type="button" 
                                 onClick={() => setIsEditOpen(false)} 
-                                className="btn-secondary px-6 py-3 rounded-xl"
+                                className="btn-secondary px-6 py-2.5 rounded-xl"
                             >
                                 Cancel
                             </button>
                             <button 
                                 type="submit" 
-                                className="btn-luxury px-6 py-3 rounded-xl"
+                                className="btn-luxury px-6 py-2.5 rounded-xl"
                             >
                                 Save Changes
                             </button>

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-    HomeIcon, UsersIcon, WrenchScrewdriverIcon, DocumentTextIcon, 
-    CircleStackIcon, UserGroupIcon, Cog6ToothIcon, BanknotesIcon
+    HomeIcon, UsersIcon, WrenchScrewdriverIcon, DocumentTextIcon,
+    CircleStackIcon, UserGroupIcon, Cog6ToothIcon, BanknotesIcon, XMarkIcon
 } from './Icons';
 
 // Modern Car Wash Icon
@@ -12,217 +12,151 @@ const CarWashIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-// Hamburger Menu Icon
-const MenuIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-    </svg>
-);
-
-// Close Icon
-const CloseIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-);
-
 const navigation = [
-  { 
-    name: 'Dashboard', 
-    href: '/', 
-    icon: HomeIcon,
-    description: 'Overview & Analytics'
-  },
-  { 
-    name: 'Customers', 
-    href: '/customers', 
-    icon: UsersIcon,
-    description: 'Client Management'
-  },
-  { 
-    name: 'Job Cards', 
-    href: '/job-cards', 
-    icon: WrenchScrewdriverIcon,
-    description: 'Service Orders'
-  },
-  { 
-    name: 'Car Wash', 
-    href: '/car-wash', 
-    icon: CarWashIcon,
-    description: 'Wash Scheduling'
-  },
-  { 
-    name: 'Invoices', 
-    href: '/invoices', 
-    icon: DocumentTextIcon,
-    description: 'Billing & Payments'
-  },
-  { 
-    name: 'Inventory', 
-    href: '/inventory', 
-    icon: CircleStackIcon,
-    description: 'Parts & Stock'
-  },
-  { 
-    name: 'Workers', 
-    href: '/workers', 
-    icon: UserGroupIcon,
-    description: 'Staff Management'
-  },
-  { 
-    name: 'Payroll', 
-    href: '/payroll', 
-    icon: BanknotesIcon,
-    description: 'Salary & Wages'
-  },
-  { 
-    name: 'Settings', 
-    href: '/settings', 
-    icon: Cog6ToothIcon,
-    description: 'Configuration'
-  },
+    { name: 'Dashboard', href: '/', icon: HomeIcon, description: 'Overview & Analytics' },
+    { name: 'Customers', href: '/customers', icon: UsersIcon, description: 'Client Management' },
+    { name: 'Job Cards', href: '/job-cards', icon: WrenchScrewdriverIcon, description: 'Service Orders' },
+    { name: 'Car Wash', href: '/car-wash', icon: CarWashIcon, description: 'Wash Scheduling' },
+    { name: 'Invoices', href: '/invoices', icon: DocumentTextIcon, description: 'Billing & Payments' },
+    { name: 'Inventory', href: '/inventory', icon: CircleStackIcon, description: 'Parts & Stock' },
+    { name: 'Workers', href: '/workers', icon: UserGroupIcon, description: 'Staff Management' },
+    { name: 'Payroll', href: '/payroll', icon: BanknotesIcon, description: 'Salary & Wages' },
+    { name: 'Settings', href: '/settings', icon: Cog6ToothIcon, description: 'Configuration' },
 ];
 
-const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+const COLLAPSED_KEY = 'janu.sidebar.collapsed';
 
-  return (
-    <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-dark-50 border border-primary-500/20 text-primary-500 hover:bg-primary-500/10 transition-all duration-300"
-      >
-        {isMobileOpen ? <CloseIcon className="h-6 w-6" /> : <MenuIcon className="h-6 w-6" />}
-      </button>
+const readCollapsed = (): boolean => {
+    try {
+        return window.localStorage.getItem(COLLAPSED_KEY) === '1';
+    } catch {
+        return false;
+    }
+};
 
-      {/* Mobile Backdrop */}
-      {isMobileOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
+interface SidebarProps {
+    mobileOpen: boolean;
+    onMobileClose: () => void;
+}
 
-      {/* Sidebar */}
-      <div className={`
-        fixed lg:static inset-y-0 left-0 z-40 
-        transform transition-all duration-300 ease-in-out
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        ${isCollapsed ? 'lg:w-20' : 'w-72 sm:w-80 lg:w-72 xl:w-80'}
-      `}>
-        <div className="h-full flex flex-col nav-glass border-r border-primary-500/10 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between h-20 px-4 border-b border-primary-500/10 flex-shrink-0">
-            <div className={`flex items-center min-w-0 transition-all duration-300 ${isCollapsed ? 'lg:justify-center lg:w-full' : 'gap-3 flex-1'}`}>
-              <div className="relative flex-shrink-0">
-                <img src="/assets/logo.png" alt="JANU MOTORS" className="h-10 w-10 rounded-lg icon-glow" />
-              </div>
-              <div className={`transition-all duration-300 overflow-hidden flex-1 min-w-0 ${
-                isCollapsed ? 'lg:max-w-0 lg:opacity-0' : 'max-w-full opacity-100'
-              }`}>
-                <div className="flex flex-col whitespace-nowrap">
-                  <span className="text-lg font-bold text-white">JANU MOTORS</span>
-                  <span className="text-xs text-primary-500/80 font-medium tracking-wider">PREMIUM GARAGE</span>
-                </div>
-              </div>
-            </div>
+const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) => {
+    const [isCollapsed, setIsCollapsed] = useState(readCollapsed);
 
-            {/* Collapse Toggle - Desktop Only, always visible */}
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:flex flex-shrink-0 p-2 rounded-lg text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 transition-all duration-300"
-              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+    const toggleCollapsed = () => {
+        setIsCollapsed(prev => {
+            const next = !prev;
+            try {
+                window.localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
+            } catch {
+                // Preference simply won't persist if storage is unavailable.
+            }
+            return next;
+        });
+    };
+
+    // Close the mobile drawer with Escape.
+    useEffect(() => {
+        if (!mobileOpen) return;
+        const handler = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onMobileClose();
+        };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [mobileOpen, onMobileClose]);
+
+    return (
+        <>
+            {/* Mobile Backdrop */}
+            {mobileOpen && (
+                <div
+                    className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                    onClick={onMobileClose}
+                    aria-hidden="true"
+                />
+            )}
+
+            {/* Sidebar: slide-over drawer on phones/tablets, sticky full-height column on desktop */}
+            <aside
+                aria-label="Main navigation"
+                className={`
+                    fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw]
+                    transform transition-transform duration-300 ease-in-out
+                    ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+                    lg:translate-x-0 lg:sticky lg:top-0 lg:z-40 lg:h-screen lg:max-w-none lg:flex-shrink-0 lg:self-start
+                    lg:transition-[width] ${isCollapsed ? 'lg:w-[4.5rem]' : 'lg:w-64 xl:w-72'}
+                `}
             >
-              <svg className={`h-5 w-5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            {navigation.map((item, index) => (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                end={item.href === '/'}
-                onClick={() => setIsMobileOpen(false)}
-                className={({ isActive }) =>
-                  `group relative flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-300 transform hover:scale-105 ${
-                    isActive
-                      ? 'bg-gradient-gold text-black shadow-gold border border-primary-500/30'
-                      : 'text-white/80 hover:text-white hover:bg-primary-500/10 border border-transparent hover:border-primary-500/20'
-                  } ${isCollapsed ? 'lg:justify-center lg:px-3' : ''}`
-                }
-                style={{
-                  animationDelay: `${index * 0.1}s`
-                }}
-              >
-                {({ isActive }) => (
-                  <>
-                    <item.icon
-                      className={`h-5 w-5 flex-shrink-0 transition-colors duration-300 ${
-                        isActive ? 'text-black' : 'text-primary-500 group-hover:text-primary-400'
-                      } ${isCollapsed ? '' : 'mr-3'}`}
-                    />
-                    
-                    <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 overflow-hidden ${
-                      isCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'
-                    }`}>
-                      <span className="truncate font-semibold whitespace-nowrap">
-                        {item.name}
-                      </span>
-                      <span className={`text-xs truncate whitespace-nowrap ${
-                        isActive ? 'text-black/70' : 'text-white/50 group-hover:text-white/70'
-                      }`}>
-                        {item.description}
-                      </span>
+                <div className="h-full flex flex-col nav-glass border-r border-primary-500/10 overflow-hidden">
+                    {/* Brand */}
+                    <div className={`flex items-center h-20 flex-shrink-0 border-b border-primary-500/10 px-4 ${isCollapsed ? 'lg:justify-center lg:px-0' : ''}`}>
+                        <img src="/assets/logo.png" alt="JANU MOTORS" className="h-10 w-10 flex-shrink-0 rounded-lg object-contain icon-glow" />
+                        <div className={`ml-3 min-w-0 flex-1 ${isCollapsed ? 'lg:hidden' : ''}`}>
+                            <div className="text-lg font-bold leading-tight text-white truncate">JANU MOTORS</div>
+                            <div className="text-[11px] font-medium tracking-wider text-primary-500/80 truncate">PREMIUM GARAGE</div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={onMobileClose}
+                            aria-label="Close navigation menu"
+                            className="lg:hidden flex-shrink-0 p-2 rounded-lg text-primary-500/70 hover:text-primary-500 hover:bg-primary-500/10 transition-colors"
+                        >
+                            <XMarkIcon className="h-6 w-6" />
+                        </button>
                     </div>
 
-                    {/* Active Indicator */}
-                    {isActive && !isCollapsed && (
-                      <div className="absolute right-2 w-2 h-2 bg-black rounded-full animate-pulse"></div>
-                    )}
+                    {/* Navigation */}
+                    <nav className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1 ${isCollapsed ? 'lg:px-2' : ''}`}>
+                        {navigation.map(item => (
+                            <NavLink
+                                key={item.name}
+                                to={item.href}
+                                end={item.href === '/'}
+                                onClick={onMobileClose}
+                                title={isCollapsed ? `${item.name} – ${item.description}` : undefined}
+                                className={({ isActive }) =>
+                                    `group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl border transition-colors duration-200
+                                    focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 ${
+                                        isActive
+                                            ? 'bg-gradient-gold text-black shadow-gold border-primary-500/30'
+                                            : 'text-white/80 hover:text-white hover:bg-primary-500/10 border-transparent hover:border-primary-500/20'
+                                    } ${isCollapsed ? 'lg:justify-center lg:px-0' : ''}`
+                                }
+                            >
+                                {({ isActive }) => (
+                                    <>
+                                        <item.icon
+                                            className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                                                isActive ? 'text-black' : 'text-primary-500 group-hover:text-primary-400'
+                                            }`}
+                                        />
+                                        <span className={`min-w-0 flex-1 truncate ${isCollapsed ? 'lg:hidden' : ''}`}>
+                                            {item.name}
+                                        </span>
+                                    </>
+                                )}
+                            </NavLink>
+                        ))}
+                    </nav>
 
-                    {/* Tooltip for collapsed state */}
-                    {isCollapsed && (
-                      <div className="absolute left-full ml-4 px-3 py-2 bg-dark-50 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-50 border border-primary-500/20 shadow-luxury">
-                        <div className="font-semibold">{item.name}</div>
-                        <div className="text-xs text-white/70">{item.description}</div>
-                        <div className="absolute left-[-6px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-dark-50"></div>
-                      </div>
-                    )}
-
-                    {/* Hover Glow Effect */}
-                    <div className="absolute inset-0 rounded-xl bg-primary-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Footer */}
-          <div className={`p-6 border-t border-primary-500/10 flex-shrink-0 transition-all duration-300 ${
-            isCollapsed ? 'lg:px-3' : ''
-          }`}>
-            <div className={`flex items-center p-4 rounded-xl bg-gradient-to-r from-primary-500/10 to-accent/10 border border-primary-500/20 transition-all duration-300 ${
-              isCollapsed ? 'lg:justify-center' : 'space-x-3'
-            }`}>
-              <div className="flex-shrink-0 w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
-              <div className={`flex-1 transition-all duration-300 overflow-hidden ${
-                isCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'
-              }`}>
-                <p className="text-sm font-medium text-white whitespace-nowrap">System Status</p>
-                <p className="text-xs text-primary-500 whitespace-nowrap">All systems operational</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+                    {/* Collapse toggle (desktop only) */}
+                    <div className={`hidden lg:block flex-shrink-0 border-t border-primary-500/10 p-3 ${isCollapsed ? 'px-2' : ''}`}>
+                        <button
+                            type="button"
+                            onClick={toggleCollapsed}
+                            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-primary-500/10 transition-colors duration-200 ${isCollapsed ? 'justify-center px-0' : ''}`}
+                        >
+                            <svg className={`h-5 w-5 flex-shrink-0 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            {!isCollapsed && <span>Collapse</span>}
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </>
+    );
 };
 
 export default Sidebar;

@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, ReactNode, useEffect, useRef } from 'react';
 import { Customer, Vehicle, JobCard, Invoice, InventoryItem, Worker, AttendanceRecord, PayrollRecord, CarWashBooking, JobStatus, PaymentStatus } from '../types';
 import { supabase } from '../supabaseClient';
 
@@ -71,7 +71,9 @@ const appReducer = (state: AppState, action: Action): AppState => {
         case 'SET_LOADING':
             return { ...state, loading: action.payload };
         case 'SET_ERROR':
-            return { ...state, error: action.payload, loading: false };
+            // Clearing an error (null) must not end an in-progress load, or pages render with empty data and
+            // detail pages redirect away on refresh. Reporting an error still ends the load.
+            return { ...state, error: action.payload, loading: action.payload ? false : state.loading };
         case 'LOGIN':
             return { ...state, isAuthenticated: true, error: null };
         case 'LOGOUT':
@@ -256,6 +258,8 @@ const AppContext = createContext<{
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [state, baseDispatch] = useReducer(appReducer, initialState);
+    // True once the first data load has finished; later refetches run in the background without the full-screen loader.
+    const hasLoadedRef = useRef(false);
 
     const formatCurrency = (amount: number): string => {
         return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -269,7 +273,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         const fetchInitialData = async () => {
             try {
-                baseDispatch({ type: 'SET_LOADING', payload: true });
+                if (!hasLoadedRef.current) {
+                    baseDispatch({ type: 'SET_LOADING', payload: true });
+                }
                 baseDispatch({ type: 'SET_ERROR', payload: null });
 
                 const [
@@ -316,6 +322,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                         carwashBookings: e9 ? [] : (carwashBookings || []),
                     }
                 });
+                hasLoadedRef.current = true;
 
                 // Surface a warning if critical tables are missing
                 const criticalError = e1 || e2 || e3 || e4;
@@ -338,6 +345,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             } else {
                 baseDispatch({ type: 'SET_LOADING', payload: false });
             }
+        }).catch(() => {
+            // Could not read the saved session; fall through to the login screen instead of spinning forever.
+            baseDispatch({ type: 'SET_LOADING', payload: false });
         });
 
         // Listen for auth state changes (login, logout, token refresh)
@@ -346,6 +356,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                 baseDispatch({ type: 'LOGIN' });
                 fetchInitialData();
             } else if (event === 'SIGNED_OUT') {
+                hasLoadedRef.current = false;
                 baseDispatch({ type: 'LOGOUT' });
             }
         });

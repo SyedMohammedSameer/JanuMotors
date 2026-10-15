@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { PayrollRecord } from '../types';
 import Modal from '../components/Modal';
-import { BanknotesIcon, PencilSquareIcon, TrashIcon, PlusIcon } from '../components/Icons';
+import { BanknotesIcon, PencilSquareIcon, TrashIcon, PlusIcon, UsersIcon } from '../components/Icons';
 
 // Calendar Icon
 const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -24,6 +24,16 @@ const CurrencyIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
 );
+
+// Star Icon
+const StarIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+    </svg>
+);
+
+// Display-only number formatting (never used for saved values)
+const formatAmount = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const months = [
     "January", "February", "March", "April", "May", "June", 
@@ -134,35 +144,43 @@ const Payroll = () => {
         }
     };
 
+    const isCurrentPeriod = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear();
+
+    const statTiles = [
+        { label: 'Total Payroll', value: `₹${formatAmount(payrollStats.totalPayroll)}`, icon: <CurrencyIcon className="h-5 w-5" />, box: 'bg-primary-500/10 text-primary-400', text: 'text-primary-400' },
+        { label: 'Employees', value: `${payrollStats.totalEmployees}`, icon: <UsersIcon className="h-5 w-5" />, box: 'bg-blue-500/10 text-blue-400', text: 'text-blue-400' },
+        { label: 'Average Pay', value: `₹${formatAmount(payrollStats.averagePayroll)}`, icon: <ChartBarIcon className="h-5 w-5" />, box: 'bg-green-500/10 text-green-400', text: 'text-green-400' },
+        { label: 'Highest Pay', value: `₹${formatAmount(payrollStats.highestPay)}`, icon: <StarIcon className="h-5 w-5" />, box: 'bg-yellow-500/10 text-yellow-400', text: 'text-yellow-400' },
+    ];
+
     return (
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient flex items-center">
-                        <BanknotesIcon className="h-8 w-8 mr-3 text-primary-500" />
-                        Payroll Management
-                    </h1>
-                    <p className="text-white/60 mt-2">Manage employee salaries and wages</p>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Payroll Management</h1>
+                    <p className="text-sm text-white/60 mt-1">Manage employee salaries and wages</p>
                 </div>
-                
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:ml-auto">
                     {/* Month/Year Selectors */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <CalendarIcon className="w-5 h-5 text-primary-500/50 flex-shrink-0" />
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-5 h-5 text-primary-500/60 flex-shrink-0" />
                         <select
+                            aria-label="Month"
                             value={selectedMonth}
                             onChange={e => setSelectedMonth(Number(e.target.value))}
-                            className="form-input px-2 sm:px-3 py-2 text-sm"
+                            className="form-input h-10 flex-1 sm:flex-none min-w-0 px-3 text-sm"
                         >
                             {months.map((month, index) => (
                                 <option key={index} value={index}>{month}</option>
                             ))}
                         </select>
                         <select
+                            aria-label="Year"
                             value={selectedYear}
                             onChange={e => setSelectedYear(Number(e.target.value))}
-                            className="form-input px-2 sm:px-3 py-2 text-sm"
+                            className="form-input h-10 flex-1 sm:flex-none min-w-0 px-3 text-sm"
                         >
                             {years.map(year => (
                                 <option key={year} value={year}>{year}</option>
@@ -172,113 +190,85 @@ const Payroll = () => {
 
                     <button
                         onClick={() => handleOpenModal(null)}
-                        className="btn-luxury px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap text-sm sm:text-base"
+                        className="btn-luxury h-10 px-4 sm:px-5 rounded-xl flex items-center justify-center gap-2 whitespace-nowrap text-sm"
                     >
-                        <PlusIcon className="h-4 sm:h-5 w-4 sm:w-5" />
+                        <PlusIcon className="h-4 w-4 flex-shrink-0" />
                         <span>Add Payroll Entry</span>
                     </button>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                <div className="card-luxury p-6 border-l-4 border-primary-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Total Payroll</p>
-                            <p className="text-2xl font-bold text-primary-400">₹{payrollStats.totalPayroll.toLocaleString()}</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {statTiles.map(tile => (
+                    <div key={tile.label} className="card-luxury p-4">
+                        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3 lg:flex-col lg:items-start lg:gap-2 xl:flex-row xl:items-center xl:gap-3">
+                            <div className={`p-2.5 rounded-xl flex-shrink-0 ${tile.box}`}>{tile.icon}</div>
+                            <div className="min-w-0 max-w-full">
+                                <p className="text-xs uppercase tracking-wide text-white/60">{tile.label}</p>
+                                <p className={`text-xl sm:text-2xl font-bold tabular-nums break-words ${tile.text}`}>{tile.value}</p>
+                            </div>
                         </div>
-                        <CurrencyIcon className="h-8 w-8 text-primary-500" />
                     </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-blue-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Employees</p>
-                            <p className="text-2xl font-bold text-blue-400">{payrollStats.totalEmployees}</p>
-                        </div>
-                        <div className="text-2xl">👥</div>
-                    </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-green-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Average Pay</p>
-                            <p className="text-2xl font-bold text-green-400">₹{payrollStats.averagePayroll.toLocaleString()}</p>
-                        </div>
-                        <ChartBarIcon className="h-8 w-8 text-green-500" />
-                    </div>
-                </div>
-
-                <div className="card-luxury p-6 border-l-4 border-yellow-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white/70">Highest Pay</p>
-                            <p className="text-2xl font-bold text-yellow-400">₹{payrollStats.highestPay.toLocaleString()}</p>
-                        </div>
-                        <div className="text-2xl">⭐</div>
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* Period Display */}
-            <div className="card-luxury p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <h3 className="text-xl font-bold text-white">
-                            Payroll for {months[selectedMonth]} {selectedYear}
-                        </h3>
-                        <p className="text-white/60 mt-1">
-                            {payrollStats.totalEmployees} employee{payrollStats.totalEmployees !== 1 ? 's' : ''} • 
-                            Total: ₹{payrollStats.totalPayroll.toLocaleString()}
-                        </p>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 px-4 py-2 bg-primary-500/10 border border-primary-500/30 rounded-full">
-                        <BanknotesIcon className="w-5 h-5 text-primary-500" />
-                        <span className="text-primary-500 font-medium">
-                            {selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear() ? 'Current Month' : 'Historical'}
-                        </span>
-                    </div>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                    <h2 className="text-base sm:text-lg font-semibold text-white">
+                        Payroll for {months[selectedMonth]} {selectedYear}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-white/60 mt-0.5">
+                        {payrollStats.totalEmployees} employee{payrollStats.totalEmployees !== 1 ? 's' : ''} •{' '}
+                        Total: ₹{formatAmount(payrollStats.totalPayroll)}
+                    </p>
                 </div>
+
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-primary-500/10 border border-primary-500/30 text-primary-400">
+                    {isCurrentPeriod ? 'Current Month' : 'Historical'}
+                </span>
             </div>
 
             {/* Payroll Records */}
             {filteredPayrollData.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                     {filteredPayrollData.map((payroll) => {
                         const worker = state.workers.find(w => w.id === payroll.worker_id);
-                        
+                        const workerName = worker?.name || 'Unknown Worker';
+
                         return (
-                            <div key={payroll.id} className="card-luxury p-6 group">
+                            <div key={payroll.id} className="card-luxury p-4 sm:p-5 flex flex-col">
                                 {/* Worker Header */}
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-12 h-12 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black text-lg">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 bg-gradient-gold rounded-full flex items-center justify-center font-bold text-black">
                                             {worker?.name.charAt(0).toUpperCase() || '?'}
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-white text-lg">{worker?.name || 'Unknown Worker'}</h3>
+                                        <div className="min-w-0">
+                                            <h3 className="font-semibold text-white text-base leading-snug break-words">{workerName}</h3>
                                             {worker?.role && (
-                                                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getRoleColor(worker.role)}`}>
+                                                <div className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap ${getRoleColor(worker.role)}`}>
                                                     {worker.role}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                    
-                                    <div className="flex items-center space-x-2">
+
+                                    <div className="flex items-center gap-1 flex-shrink-0 -mr-1.5 -mt-1.5">
                                         <button
                                             onClick={() => handleOpenModal(payroll)}
-                                            className="p-2 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-all duration-300"
+                                            aria-label={`Edit payroll entry for ${workerName}`}
+                                            title="Edit"
+                                            className="p-2.5 sm:p-2 text-primary-500/60 hover:text-primary-500 hover:bg-primary-500/10 rounded-lg transition-colors"
                                         >
                                             <PencilSquareIcon className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={() => handleDelete(payroll.id)}
-                                            className="p-2 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-300"
+                                            aria-label={`Delete payroll entry for ${workerName}`}
+                                            title="Delete"
+                                            className="p-2.5 sm:p-2 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                         >
                                             <TrashIcon className="w-5 h-5" />
                                         </button>
@@ -286,29 +276,33 @@ const Payroll = () => {
                                 </div>
 
                                 {/* Salary Amount */}
-                                <div className="text-center mb-4 p-4 rounded-lg bg-gradient-to-r from-primary-500/10 to-green-500/10 border border-primary-500/20">
-                                    <p className="text-sm text-white/70 mb-1">Monthly Salary</p>
-                                    <p className="text-3xl font-bold text-gradient">₹{payroll.amount.toLocaleString()}</p>
+                                <div className="mt-4 flex items-center justify-between gap-x-3 gap-y-1 flex-wrap px-4 py-3 rounded-lg bg-primary-500/5 border border-primary-500/20">
+                                    <p className="text-sm text-white/70">Monthly Salary</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-gradient tabular-nums break-words">₹{formatAmount(payroll.amount)}</p>
                                 </div>
 
                                 {/* Notes */}
                                 {payroll.notes && (
-                                    <div className="p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
-                                        <p className="text-sm text-white/70 mb-1">Notes</p>
-                                        <p className="text-sm text-white italic">"{payroll.notes}"</p>
+                                    <div className="mt-3 p-3 rounded-lg bg-dark-50/30 border border-primary-500/10">
+                                        <p className="text-xs uppercase tracking-wide text-white/60 mb-1">Notes</p>
+                                        <p className="text-sm text-white/90 italic break-words whitespace-pre-line">"{payroll.notes}"</p>
                                     </div>
                                 )}
 
                                 {/* Performance Indicator */}
-                                <div className="mt-4 pt-4 border-t border-primary-500/10">
-                                    <div className="flex items-center justify-between text-xs">
+                                <div className="mt-auto pt-4">
+                                    <div className="pt-3 border-t border-primary-500/10 flex items-center justify-between gap-3 text-xs">
                                         <span className="text-white/60">Compared to average</span>
-                                        <span className={`font-semibold ${
+                                        <span className={`font-semibold tabular-nums whitespace-nowrap ${
                                             payroll.amount > payrollStats.averagePayroll ? 'text-green-400' : 
                                             payroll.amount < payrollStats.averagePayroll ? 'text-red-400' : 'text-white'
                                         }`}>
-                                            {payroll.amount > payrollStats.averagePayroll ? '+' : ''}
-                                            {((payroll.amount - payrollStats.averagePayroll) / payrollStats.averagePayroll * 100).toFixed(1)}%
+                                            {payrollStats.averagePayroll > 0 ? (
+                                                <>
+                                                    {payroll.amount > payrollStats.averagePayroll ? '+' : ''}
+                                                    {((payroll.amount - payrollStats.averagePayroll) / payrollStats.averagePayroll * 100).toFixed(1)}%
+                                                </>
+                                            ) : '—'}
                                         </span>
                                     </div>
                                 </div>
@@ -317,17 +311,17 @@ const Payroll = () => {
                     })}
                 </div>
             ) : (
-                <div className="card-luxury p-12 text-center">
-                    <div className="w-20 h-20 bg-dark-100/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <BanknotesIcon className="w-10 h-10 text-primary-500/50" />
+                <div className="card-luxury p-8 sm:p-12 text-center">
+                    <div className="w-16 h-16 bg-dark-100/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BanknotesIcon className="w-8 h-8 text-primary-500/50" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">No Payroll Records</h3>
-                    <p className="text-white/60 mb-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">No Payroll Records</h3>
+                    <p className="text-sm text-white/60 mb-6 break-words">
                         No payroll entries found for {months[selectedMonth]} {selectedYear}
                     </p>
                     <button
                         onClick={() => handleOpenModal(null)}
-                        className="btn-luxury px-6 py-3 rounded-xl"
+                        className="btn-luxury px-6 py-2.5 rounded-xl text-sm"
                     >
                         Add First Entry
                     </button>
@@ -336,15 +330,15 @@ const Payroll = () => {
             
             {/* Add/Edit Payroll Modal */}
             <Modal title={currentRecord?.id ? "Edit Payroll Entry" : "Create Payroll Entry"} isOpen={isModalOpen} onClose={handleCloseModal}>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-white/80 mb-2">Worker *</label>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Worker *</label>
                             <select 
                                 name="worker_id" 
                                 value={currentRecord?.worker_id || ''} 
                                 onChange={handleChange} 
-                                className="form-input w-full px-4 py-3" 
+                                className="form-input w-full min-w-0 px-4 py-2.5" 
                                 required
                             >
                                 <option value="">-- Select a worker --</option>
@@ -355,7 +349,7 @@ const Payroll = () => {
                         </div>
                         
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Salary Amount (₹) *</label>
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Salary Amount (₹) *</label>
                             <input 
                                 type="number" 
                                 name="amount" 
@@ -364,41 +358,41 @@ const Payroll = () => {
                                 placeholder="0.00"
                                 step="0.01"
                                 min="0"
-                                className="form-input w-full px-4 py-3" 
+                                className="form-input w-full px-4 py-2.5" 
                                 required 
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-white/80 mb-2">Period</label>
-                            <div className="form-input w-full px-4 py-3 bg-dark-50/50 text-white/60">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Period</label>
+                            <div className="form-input w-full px-4 py-2.5 bg-dark-50/50 text-white/60">
                                 {months[selectedMonth]} {selectedYear}
                             </div>
                         </div>
 
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-white/80 mb-2">Notes</label>
+                        <div className="sm:col-span-2">
+                            <label className="block text-sm font-medium text-white/80 mb-1.5">Notes</label>
                             <textarea 
                                 name="notes" 
                                 value={currentRecord?.notes || ''} 
                                 onChange={handleChange} 
-                                className="form-input w-full px-4 py-3 h-24 resize-none"
+                                className="form-input w-full px-4 py-2.5 h-24 resize-none"
                                 placeholder="Bonus, overtime, deductions, etc..."
                             />
                         </div>
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-6">
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
                         <button 
                             type="button" 
                             onClick={handleCloseModal} 
-                            className="btn-secondary px-6 py-3 rounded-xl"
+                            className="btn-secondary px-6 py-2.5 rounded-xl"
                         >
                             Cancel
                         </button>
                         <button 
                             type="submit" 
-                            className="btn-luxury px-6 py-3 rounded-xl"
+                            className="btn-luxury px-6 py-2.5 rounded-xl"
                         >
                             {currentRecord?.id ? 'Update Entry' : 'Save Entry'}
                         </button>

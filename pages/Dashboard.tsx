@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, Area, AreaChart } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useAppContext } from '../context/AppContext';
 import Modal from '../components/Modal';
 import Card from '../components/Card';
@@ -20,12 +20,17 @@ import {
     filterByDateRange,
 } from '../utils/exportData';
 
-// Trend Arrow Icon
-const TrendUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-    </svg>
-);
+// Axis tick colour and compact INR formatter (lakh / crore) used by both charts
+const AXIS_TICK = { fill: 'rgba(255,255,255,0.7)', fontSize: 12 };
+const formatAxisCurrency = (value: number) => {
+    const abs = Math.abs(value);
+    const sign = value < 0 ? '-' : '';
+    const compact = (n: number, unit: string) => `${sign}₹${Number.isInteger(n) ? n : n.toFixed(1)}${unit}`;
+    if (abs >= 1e7) return compact(abs / 1e7, 'Cr');
+    if (abs >= 1e5) return compact(abs / 1e5, 'L');
+    if (abs >= 1e3) return compact(abs / 1e3, 'K');
+    return `${sign}₹${abs}`;
+};
 
 const Dashboard = () => {
     const { state, formatCurrency } = useAppContext();
@@ -55,6 +60,7 @@ const Dashboard = () => {
         const monthlyRevenue = [];
         for (let i = 5; i >= 0; i--) {
             const date = new Date();
+            date.setDate(1); // avoid month overflow when today is the 29th-31st
             date.setMonth(date.getMonth() - i);
             const month = date.getMonth();
             const year = date.getFullYear();
@@ -67,8 +73,7 @@ const Dashboard = () => {
             
             monthlyRevenue.push({
                 month: date.toLocaleDateString('en-US', { month: 'short' }),
-                revenue: revenue,
-                target: 150000 // Example target in INR
+                revenue: revenue
             });
         }
 
@@ -100,7 +105,7 @@ const Dashboard = () => {
             id: j.id,
             type: 'job',
             date: new Date(j.created_at),
-            text: `Job card created: ${j.description.substring(0, 40)}...`,
+            text: `Job card created: ${j.description.substring(0, 40)}${j.description.length > 40 ? '...' : ''}`,
             icon: <WrenchScrewdriverIcon className="h-5 w-5" />,
             color: 'text-primary-500'
         }));
@@ -137,15 +142,15 @@ const Dashboard = () => {
         [JobStatus.CANCELLED]: '#F87171',
     };
 
-    // Custom Tooltip Components
-    const CustomTooltip = ({ active, payload, label }: any) => {
+    // Custom Tooltip (currency by default; job counts for the pie chart)
+    const CustomTooltip = ({ active, payload, label, isCurrency = true }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="glass-gold rounded-lg border border-primary-500/30 p-3 shadow-luxury">
-                    <p className="text-white font-semibold">{label}</p>
+                <div className="rounded-lg border border-primary-500/30 bg-dark-50 p-3 shadow-luxury">
+                    {label !== undefined && <p className="text-sm font-semibold text-white mb-1">{label}</p>}
                     {payload.map((entry: any, index: number) => (
-                        <p key={index} className="text-sm" style={{ color: entry.color }}>
-                            {entry.name}: {formatCurrency(entry.value)}
+                        <p key={index} className="text-sm tabular-nums" style={{ color: entry.payload?.fill || entry.color }}>
+                            {entry.name}: {!isCurrency ? entry.value : entry.value < 0 ? `-${formatCurrency(-entry.value)}` : formatCurrency(entry.value)}
                         </p>
                     ))}
                 </div>
@@ -153,6 +158,10 @@ const Dashboard = () => {
         }
         return null;
     };
+
+    const totalJobs = dashboardData.jobStatusData.reduce((sum, d) => sum + d.value, 0);
+    const hasRevenue = dashboardData.monthlyRevenue.some(m => m.revenue > 0);
+    const { financialSummaryData } = dashboardData;
 
     const handleExport = async () => {
         setIsExporting(true);
@@ -207,175 +216,234 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in">
-            {/* Welcome Header */}
-            <div className="relative overflow-hidden rounded-xl sm:rounded-2xl glass-gold border border-primary-500/30 p-4 sm:p-6 md:p-8">
-                <div className="flex justify-between items-start">
-                    <div className="relative z-10 flex-1">
-                        <h1 className="text-xl sm:text-3xl font-bold text-gradient mb-2">Welcome back, Admin</h1>
-                        <p className="text-white/80 text-sm sm:text-lg">Here's what's happening at your garage today</p>
-                    </div>
-                    <button 
-                        onClick={() => setIsExportModalOpen(true)}
-                        className="btn-luxury px-4 py-3 rounded-xl flex items-center space-x-2 whitespace-nowrap text-sm"
-                    >
-                        <ArrowDownTrayIcon className="h-4 w-4" />
-                        <span>Export Data</span>
-                    </button>
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
+            {/* Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Welcome back, Admin</h1>
+                    <p className="text-sm text-white/60">Here's what's happening at your garage today</p>
                 </div>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-500/20 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-accent/20 to-transparent rounded-full translate-y-16 -translate-x-16"></div>
+                <button
+                    onClick={() => setIsExportModalOpen(true)}
+                    className="btn-luxury w-full sm:w-auto px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 whitespace-nowrap text-sm flex-shrink-0"
+                >
+                    <ArrowDownTrayIcon className="h-4 w-4" />
+                    <span>Export Data</span>
+                </button>
             </div>
 
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                <Card 
-                    title="Total Customers" 
-                    value={dashboardData.totalCustomers} 
-                    icon={<UsersIcon className="h-8 w-8" />}
-                    change="+12%"
-                    changeType="positive"
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                <Card
+                    title="Total Customers"
+                    value={dashboardData.totalCustomers}
+                    icon={<UsersIcon className="h-6 w-6" />}
                 />
-                <Card 
-                    title="Active Jobs" 
-                    value={dashboardData.jobsInProgress} 
-                    icon={<WrenchScrewdriverIcon className="h-8 w-8" />}
-                    change="+8%"
-                    changeType="positive"
+                <Card
+                    title="Active Jobs"
+                    value={dashboardData.jobsInProgress}
+                    icon={<WrenchScrewdriverIcon className="h-6 w-6" />}
                     gradient
                 />
-                <Card 
-                    title="Monthly Revenue" 
-                    value={formatCurrency(dashboardData.revenueThisMonth)} 
-                    icon={<CurrencyDollarIcon className="h-8 w-8" />}
-                    change="+25%"
-                    changeType="positive"
+                <Card
+                    title="Monthly Revenue"
+                    value={formatCurrency(dashboardData.revenueThisMonth)}
+                    icon={<CurrencyDollarIcon className="h-6 w-6" />}
                 />
-                <Card 
-                    title="Low Stock Alert" 
-                    value={dashboardData.lowStockItems} 
-                    icon={<CircleStackIcon className="h-8 w-8" />}
-                    change={dashboardData.lowStockItems > 0 ? "Attention needed" : "All good"}
-                    changeType={dashboardData.lowStockItems > 0 ? "negative" : "positive"}
-                />
+                {/* Low-stock status chip is overlaid here because Card always appends "vs last month" to its change text */}
+                <div className="relative min-w-0">
+                    <Card
+                        title="Low Stock Alert"
+                        value={dashboardData.lowStockItems}
+                        icon={<CircleStackIcon className="h-6 w-6" />}
+                    />
+                    <span
+                        className={`absolute top-4 right-4 sm:top-5 sm:right-5 z-20 pointer-events-none whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            dashboardData.lowStockItems > 0 ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'
+                        }`}
+                    >
+                        {dashboardData.lowStockItems > 0 ? (
+                            <>
+                                <span className="sm:hidden">Attention</span>
+                                <span className="hidden sm:inline">Attention needed</span>
+                            </>
+                        ) : 'All good'}
+                    </span>
+                </div>
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6 xl:gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
                 {/* Revenue Trend */}
-                <div className="xl:col-span-2 card-luxury p-4 sm:p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-white">Revenue Trend</h3>
-                        <div className="flex items-center space-x-2 text-green-400">
-                            <TrendUpIcon className="h-5 w-5" />
-                            <span className="text-sm font-semibold">+25% vs last period</span>
-                        </div>
+                <div className="xl:col-span-2 min-w-0 flex flex-col card-luxury p-4 sm:p-6">
+                    <div className="flex items-center justify-between gap-x-3 gap-y-1 flex-wrap mb-4 sm:mb-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-white">Revenue Trend</h3>
+                        <span className="text-xs text-white/60">Paid invoices, last 6 months</span>
                     </div>
-                    <ResponsiveContainer width="100%" height={320}>
-                        <AreaChart data={dashboardData.monthlyRevenue}>
-                            <defs>
-                                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#FFD700" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#FFD700" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,215,0,0.1)" />
-                            <XAxis 
-                                dataKey="month" 
-                                tick={{ fill: '#ffffff', fontSize: 12 }}
-                                axisLine={false}
-                                tickLine={false}
-                            />
-                            <YAxis 
-                                tick={{ fill: '#ffffff', fontSize: 12 }}
-                                axisLine={false}
-                                tickLine={false}
-                                tickFormatter={(value) => `₹${(value/1000).toFixed(0)}K`}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Area 
-                                type="monotone" 
-                                dataKey="revenue" 
-                                stroke="#FFD700" 
-                                strokeWidth={3}
-                                fill="url(#revenueGradient)"
-                            />
-                            <Line 
-                                type="monotone" 
-                                dataKey="target" 
-                                stroke="#ffffff" 
-                                strokeDasharray="5 5"
-                                strokeWidth={2}
-                                dot={false}
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <div className="relative flex-1 min-h-[16rem] sm:min-h-[20rem] w-full">
+                        <div className="absolute inset-0">
+                        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 240 }}>
+                            <AreaChart data={dashboardData.monthlyRevenue} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#FFD700" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#FFD700" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,215,0,0.1)" />
+                                <XAxis
+                                    dataKey="month"
+                                    tick={AXIS_TICK}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    width={56}
+                                    tick={AXIS_TICK}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    allowDecimals={false}
+                                    domain={hasRevenue ? [0, 'auto'] : [0, 1000]}
+                                    tickFormatter={formatAxisCurrency}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Area
+                                    type="monotone"
+                                    dataKey="revenue"
+                                    name="Revenue"
+                                    stroke="#FFD700"
+                                    strokeWidth={3}
+                                    fill="url(#revenueGradient)"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                        </div>
+                        {!hasRevenue && (
+                            <div className="absolute inset-0 pl-14 flex items-center justify-center pointer-events-none">
+                                <p className="text-sm text-white/60 text-center px-6">No paid invoices in the last 6 months</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Job Status Pie Chart */}
-                <div className="card-luxury p-4 sm:p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 sm:mb-6">Job Status Overview</h3>
-                    <ResponsiveContainer width="100%" height={240} className="sm:!h-[320px]">
-                        <PieChart>
-                            <Pie
-                                data={dashboardData.jobStatusData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={100}
-                                fill="#8884d8"
-                                dataKey="value"
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            >
-                                {dashboardData.jobStatusData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={JOB_STATUS_COLORS[entry.name as JobStatus] || '#808080'} />
+                <div className="min-w-0 card-luxury p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-6">Job Status Overview</h3>
+                    {dashboardData.jobStatusData.length > 0 ? (
+                        <>
+                            <div className="relative h-48 sm:h-56 w-full">
+                                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 240 }}>
+                                    <PieChart>
+                                        <Pie
+                                            data={dashboardData.jobStatusData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius="58%"
+                                            outerRadius="90%"
+                                            paddingAngle={2}
+                                            stroke="none"
+                                            dataKey="value"
+                                        >
+                                            {dashboardData.jobStatusData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={JOB_STATUS_COLORS[entry.name as JobStatus] || '#808080'} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip content={<CustomTooltip isCurrency={false} />} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className="text-2xl font-bold text-white tabular-nums">{totalJobs}</span>
+                                    <span className="text-xs text-white/60">{totalJobs === 1 ? 'Job' : 'Jobs'}</span>
+                                </div>
+                            </div>
+                            <ul className="mt-4 mx-auto w-full max-w-lg grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-x-8 gap-y-2">
+                                {dashboardData.jobStatusData.map(entry => (
+                                    <li key={entry.name} className="flex items-center gap-2 text-sm min-w-0">
+                                        <span
+                                            className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                                            style={{ backgroundColor: JOB_STATUS_COLORS[entry.name as JobStatus] || '#808080' }}
+                                        ></span>
+                                        <span className="flex-1 min-w-0 text-white/80 break-words">{entry.name}</span>
+                                        <span className="text-white/60 tabular-nums whitespace-nowrap">
+                                            {entry.value} <span className="text-white/50">({Math.round((entry.value / totalJobs) * 100)}%)</span>
+                                        </span>
+                                    </li>
                                 ))}
-                            </Pie>
-                            <Tooltip content={<CustomTooltip />} />
-                        </PieChart>
-                    </ResponsiveContainer>
+                            </ul>
+                        </>
+                    ) : (
+                        <div className="flex h-48 sm:h-56 items-center justify-center">
+                            <p className="text-sm text-white/60">No job cards yet</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Financial Summary */}
-                <div className="card-luxury p-4 sm:p-6">
-                    <h3 className="text-xl font-bold text-white mb-6">Financial Summary</h3>
-                    <ResponsiveContainer width="100%" height={280}>
-                        <BarChart data={dashboardData.financialSummaryData} barCategoryGap="20%">
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,215,0,0.1)" />
-                            <XAxis 
-                                dataKey="name" 
-                                tick={{ fill: '#ffffff', fontSize: 12 }}
-                                axisLine={false}
-                                tickLine={false}
-                            />
-                            <YAxis 
-                                tick={{ fill: '#ffffff', fontSize: 12 }}
-                                axisLine={false}
-                                tickLine={false}
-                                tickFormatter={(value) => `₹${(value/1000).toFixed(0)}K`}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Bar dataKey="income" fill="#34D399" name="Income" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="payroll" fill="#F87171" name="Payroll" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="profit" fill="#FFD700" name="Profit" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                <div className="min-w-0 flex flex-col card-luxury p-4 sm:p-6">
+                    <div className="flex items-center justify-between gap-x-3 gap-y-1 flex-wrap mb-4">
+                        <h3 className="text-base sm:text-lg font-semibold text-white">Financial Summary</h3>
+                        <span className="text-xs text-white/60">This month</span>
+                    </div>
+                    <dl className="space-y-2 mb-4">
+                        {[
+                            { label: 'Income', color: '#34D399', value: financialSummaryData[0].income },
+                            { label: 'Payroll', color: '#F87171', value: financialSummaryData[0].payroll },
+                            { label: 'Profit', color: '#FFD700', value: financialSummaryData[0].profit },
+                        ].map(item => (
+                            <div key={item.label} className="flex items-center justify-between gap-3">
+                                <dt className="flex items-center gap-2 text-xs uppercase tracking-wide text-white/60">
+                                    <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></span>
+                                    {item.label}
+                                </dt>
+                                <dd className="text-sm sm:text-base font-semibold text-white tabular-nums whitespace-nowrap">
+                                    {item.value < 0 ? `-${formatCurrency(-item.value)}` : formatCurrency(item.value)}
+                                </dd>
+                            </div>
+                        ))}
+                    </dl>
+                    <div className="relative flex-1 min-h-[14rem] sm:min-h-[16rem] w-full">
+                        <div className="absolute inset-0">
+                        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 240 }}>
+                            <BarChart data={financialSummaryData} barCategoryGap="20%" margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,215,0,0.1)" />
+                                <XAxis
+                                    dataKey="name"
+                                    tick={AXIS_TICK}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    width={56}
+                                    tick={AXIS_TICK}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    allowDecimals={false}
+                                    tickFormatter={formatAxisCurrency}
+                                />
+                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                                <Bar dataKey="income" fill="#34D399" name="Income" radius={[4, 4, 0, 0]} maxBarSize={56} />
+                                <Bar dataKey="payroll" fill="#F87171" name="Payroll" radius={[4, 4, 0, 0]} maxBarSize={56} />
+                                <Bar dataKey="profit" fill="#FFD700" name="Profit" radius={[4, 4, 0, 0]} maxBarSize={56} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Recent Activity */}
-                <div className="card-luxury p-4 sm:p-6">
-                    <h3 className="text-xl font-bold text-white mb-4 sm:mb-6">Recent Activity</h3>
-                    <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar">
+                <div className="min-w-0 card-luxury p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-6">Recent Activity</h3>
+                    <div className="space-y-3">
                         {dashboardData.recentActivity.length > 0 ? dashboardData.recentActivity.map(activity => (
-                            <div key={`${activity.type}-${activity.id}`} className="flex items-start space-x-4 p-3 rounded-xl bg-dark-50/30 border border-primary-500/10 hover:border-primary-500/30 transition-all duration-300">
-                                <div className={`p-2 rounded-lg bg-dark-100/50 ${activity.color}`}>
+                            <div key={`${activity.type}-${activity.id}`} className="flex items-start gap-3 p-3 rounded-xl bg-dark-50/30 border border-primary-500/10 hover:border-primary-500/30 transition-colors">
+                                <div className={`p-2 flex-shrink-0 rounded-lg bg-dark-100/50 ${activity.color}`}>
                                     {activity.icon}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-white leading-relaxed">{activity.text}</p>
+                                    <p className="text-sm font-medium text-white break-words">{activity.text}</p>
                                     <p className="text-xs text-primary-500/80 mt-1">
                                         {activity.date.toLocaleString()}
                                     </p>
@@ -383,10 +451,10 @@ const Dashboard = () => {
                             </div>
                         )) : (
                             <div className="text-center py-8">
-                                <div className="w-16 h-16 bg-dark-100/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <DocumentTextIcon className="w-8 h-8 text-primary-500/50" />
+                                <div className="w-12 h-12 bg-dark-100/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <DocumentTextIcon className="w-6 h-6 text-primary-500/50" />
                                 </div>
-                                <p className="text-white/60">No recent activity</p>
+                                <p className="text-sm text-white/60">No recent activity</p>
                             </div>
                         )}
                     </div>
@@ -394,70 +462,70 @@ const Dashboard = () => {
             </div>
 
             <Modal title="Export Garage Data" isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)}>
-                <div className="space-y-6">
+                <div className="space-y-5">
                     <div>
-                        <label className="block text-sm font-medium text-white/80 mb-3">Export Format</label>
-                        <div className="flex gap-4">
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    name="format" 
-                                    value="csv" 
+                        <label className="block text-sm font-medium text-white/80 mb-1.5">Export Format</label>
+                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-6">
+                            <label className="flex items-center gap-2 cursor-pointer min-h-[44px] sm:min-h-0 sm:py-1">
+                                <input
+                                    type="radio"
+                                    name="format"
+                                    value="csv"
                                     checked={exportFormat === 'csv'}
                                     onChange={(e) => setExportFormat(e.target.value as 'csv' | 'xlsx')}
-                                    className="rounded"
+                                    className="h-4 w-4 flex-shrink-0 accent-primary-500"
                                 />
-                                <span className="text-white">CSV (Excel Compatible)</span>
+                                <span className="text-sm text-white">CSV (Excel Compatible)</span>
                             </label>
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    name="format" 
-                                    value="xlsx" 
+                            <label className="flex items-center gap-2 cursor-pointer min-h-[44px] sm:min-h-0 sm:py-1">
+                                <input
+                                    type="radio"
+                                    name="format"
+                                    value="xlsx"
                                     checked={exportFormat === 'xlsx'}
                                     onChange={(e) => setExportFormat(e.target.value as 'csv' | 'xlsx')}
-                                    className="rounded"
+                                    className="h-4 w-4 flex-shrink-0 accent-primary-500"
                                 />
-                                <span className="text-white">XLSX (Excel Format)</span>
+                                <span className="text-sm text-white">XLSX (Excel Format)</span>
                             </label>
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-white/80 mb-3">Time Period</label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    name="period" 
-                                    value="all" 
+                        <label className="block text-sm font-medium text-white/80 mb-1.5">Time Period</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-3">
+                            <label className="flex items-center gap-2 cursor-pointer min-h-[44px] sm:min-h-0 sm:py-1">
+                                <input
+                                    type="radio"
+                                    name="period"
+                                    value="all"
                                     checked={exportPeriod === 'all'}
                                     onChange={(e) => setExportPeriod(e.target.value as 'all' | 'weekly' | 'monthly')}
-                                    className="rounded"
+                                    className="h-4 w-4 flex-shrink-0 accent-primary-500"
                                 />
-                                <span className="text-white">All Data</span>
+                                <span className="text-sm text-white">All Data</span>
                             </label>
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    name="period" 
-                                    value="weekly" 
+                            <label className="flex items-center gap-2 cursor-pointer min-h-[44px] sm:min-h-0 sm:py-1">
+                                <input
+                                    type="radio"
+                                    name="period"
+                                    value="weekly"
                                     checked={exportPeriod === 'weekly'}
                                     onChange={(e) => setExportPeriod(e.target.value as 'all' | 'weekly' | 'monthly')}
-                                    className="rounded"
+                                    className="h-4 w-4 flex-shrink-0 accent-primary-500"
                                 />
-                                <span className="text-white">Last 7 Days</span>
+                                <span className="text-sm text-white">Last 7 Days</span>
                             </label>
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    name="period" 
-                                    value="monthly" 
+                            <label className="flex items-center gap-2 cursor-pointer min-h-[44px] sm:min-h-0 sm:py-1">
+                                <input
+                                    type="radio"
+                                    name="period"
+                                    value="monthly"
                                     checked={exportPeriod === 'monthly'}
                                     onChange={(e) => setExportPeriod(e.target.value as 'all' | 'weekly' | 'monthly')}
-                                    className="rounded"
+                                    className="h-4 w-4 flex-shrink-0 accent-primary-500"
                                 />
-                                <span className="text-white">Last 30 Days</span>
+                                <span className="text-sm text-white">Last 30 Days</span>
                             </label>
                         </div>
                     </div>
@@ -468,19 +536,19 @@ const Dashboard = () => {
                         </p>
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-6">
-                        <button 
-                            type="button" 
-                            onClick={() => setIsExportModalOpen(false)} 
-                            className="btn-secondary px-6 py-3 rounded-xl"
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsExportModalOpen(false)}
+                            className="btn-secondary px-6 py-2.5 rounded-xl"
                         >
                             Cancel
                         </button>
-                        <button 
+                        <button
                             type="button"
                             onClick={handleExport}
                             disabled={isExporting}
-                            className="btn-luxury px-6 py-3 rounded-xl flex items-center space-x-2 disabled:opacity-50"
+                            className="btn-luxury px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             <ArrowDownTrayIcon className="h-4 w-4" />
                             <span>{isExporting ? 'Exporting...' : 'Export Data'}</span>
@@ -488,20 +556,6 @@ const Dashboard = () => {
                     </div>
                 </div>
             </Modal>
-
-            <style jsx>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 4px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(26, 26, 26, 0.3);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: linear-gradient(135deg, #FFD700, #FFC107);
-                    border-radius: 10px;
-                }
-            `}</style>
         </div>
     );
 };
