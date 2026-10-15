@@ -87,7 +87,7 @@ async function buildInvoicePDF(
     let y = m;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text('GSTIN : 37CZXXPB7686K2Z9', m + 2, y + 5);
+    doc.text('GSTIN : 37CZXPB7686K2Z9', m + 2, y + 5);
     doc.text('TAX INVOICE', pw / 2, y + 5, { align: 'center' });
     doc.text('Cell : 8885333003', pw - m - 2, y + 5, { align: 'right' });
     
