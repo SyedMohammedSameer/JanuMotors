@@ -26,7 +26,7 @@ function numberToRealWords(amount: number): string {
     return str.trim() ? str.trim() + ' Rupees Only' : 'Zero Rupees Only';
 }
 
-async function buildInvoicePDF(
+export async function buildInvoicePDF(
     invoice: Invoice,
     customer: Customer | undefined,
     vehicle: Vehicle | undefined
@@ -113,13 +113,34 @@ async function buildInvoicePDF(
     doc.setFontSize(9);
     
     const custName = safeValue(customer?.name, 'Walking Customer');
-    const custAddr = safeValue(customer?.address, '');
+    const vehicleModel = [vehicle?.make, vehicle?.model].map(part => safeValue(part)).filter(Boolean).join(' ');
+    const vehicleNumber = safeValue(vehicle?.license_plate, '');
     const custPhone = safeValue(customer?.phone, '');
-    
-    doc.text(`Name      : ${custName}`, m + 4, y + 5);
-    doc.text(`Address   : ${custAddr}`, m + 4, y + 10);
-    doc.text(`State       : 37`, m + 4, y + 15);
-    
+
+    // Left half of the details box: Name / Model Name / Number, with the colons lined up.
+    const labelX = m + 4;
+    const valueX = labelX + 20;
+    const valueMaxWidth = pw / 2 - valueX - 3; // stay clear of the centre divider
+    // Values come from user data, so a long one shrinks a little first and is cut with "..." only as a last resort.
+    const fitValue = (text: string) => {
+        for (const size of [9, 8, 7]) {
+            doc.setFontSize(size);
+            if (doc.getTextWidth(text) <= valueMaxWidth) return text;
+        }
+        let cut = text;
+        while (cut.length > 3 && doc.getTextWidth(`${cut}...`) > valueMaxWidth) cut = cut.slice(0, -1);
+        return `${cut.trimEnd()}...`;
+    };
+    const detailRow = (label: string, value: string, rowY: number) => {
+        doc.setFontSize(9);
+        doc.text(label, labelX, rowY);
+        doc.text(fitValue(`: ${value}`), valueX, rowY);
+        doc.setFontSize(9);
+    };
+    detailRow('Name', custName, y + 5);
+    detailRow('Model Name', vehicleModel, y + 10);
+    detailRow('Number', vehicleNumber, y + 15);
+
     doc.text(`Invoice No. : ${invoice.id}`, pw/2 + 4, y + 5);
     doc.text(`Date of Issue : ${formatDate(invoice.issue_date)}`, pw/2 + 4, y + 10);
     doc.text(`Customer Mobile: ${custPhone}`, pw/2 + 4, y + 15);

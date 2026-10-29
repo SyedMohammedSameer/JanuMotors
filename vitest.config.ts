@@ -5,6 +5,9 @@ import { defineConfig } from 'vitest/config';
 const root = path.dirname(fileURLToPath(import.meta.url));
 
 // Kept separate from vite.config.ts so the production build is unaffected.
+// The garage runs on India time; pinning it keeps date-dependent tests identical on every developer machine.
+process.env.TZ = 'Asia/Kolkata';
+
 export default defineConfig({
   resolve: {
     alias: { '@': root },
